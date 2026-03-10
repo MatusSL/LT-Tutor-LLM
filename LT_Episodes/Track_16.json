@@ -1,0 +1,37 @@
+{
+    "id": 16,
+    "type": "mixed",
+    "unlocked_words": [
+        "comenzar",
+        "empezar",
+        "empiezo",
+        "empieza",
+        "empiezan",
+        "empiezas",
+        "cuándo",
+        "poder",
+        "puedo",
+        "dormir",
+        "duermo",
+        "me",
+        "duerme",
+        "duermen",
+        "encontrar",
+        "encuentro",
+        "lo",
+        "mostrar",
+        "muestro",
+        "muestra",
+        "muestran"
+    ],
+    "unlocked_structures": [
+        "present tense stem-changing verbs (e → ie)",
+        "present tense stem-changing verbs (o → ue)",
+        "reflexive construction (me duermo)",
+        "verb + lo (object pronoun)",
+        "question with cuándo"
+    ],
+    "unlocked_tenses": [
+        "present"
+    ]
+}

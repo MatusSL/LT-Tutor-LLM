@@ -1,0 +1,30 @@
+{
+    "id": 2,
+    "type": "vocabulary",
+    "unlocked_words" : [
+        "anual",
+        "colonial",
+        "cultural",
+        "dental",
+        "diente",
+        "es",
+        "fatal",
+        "festival",
+        "ideal",
+        "ilegal",
+        "legal",
+        "liberal",
+        "metal",
+        "natal",
+        "natural",
+        "no",
+        "normal",
+        "personal",
+        "total",
+        "verbal",
+        "verbo"
+    ],
+
+    "unlocked_structures": [],
+    "unlocked_tenses": ["present"]
+}

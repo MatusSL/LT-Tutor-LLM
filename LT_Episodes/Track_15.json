@@ -1,0 +1,44 @@
+{
+    "id": 15,
+    "type": "mixed",
+    "unlocked_words": [
+        "qué",
+        "pasar",
+        "pasa",
+        "quiero",
+        "saber",
+        "tener",
+        "quierer",
+        "quiero",
+        "pensar",
+        "pienso",
+        "piensa",
+        "piensas",
+        "comer",
+        "tarde",
+        "más",
+        "venir",
+        "viene",
+        "vienen",
+        "vienes",
+        "cuándo",
+        "entender",
+        "entiendo",
+        "entiende",
+        "entienden",
+        "perder",
+        "pierdo",
+        "lo",
+        "los"
+    ],
+    "unlocked_structures": [
+        "qué + present verb (qué pasa)",
+        "quiero saber + clause",
+        "present tense stem-changing verbs (e → ie)",
+        "pensar + infinitive (plan / intention)",
+        "verb + lo / los (object pronouns)"
+    ],
+    "unlocked_tenses": [
+        "present"
+    ]
+}

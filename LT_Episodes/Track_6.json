@@ -1,0 +1,36 @@
+{
+    "id": 6,
+    "type": "mixed",
+    "unlocked_words": [
+        "intento",
+        "publicarlo",
+        "administrarlo",
+        "imitarlo",
+        "hospital",
+        "horrible",
+        "habitual",
+        "habitualmente",
+        "ahora",
+        "quiero",
+        "cancelarlo",
+        "pero",
+        "no",
+        "voy",
+        "visitar",
+        "visitarlo",
+        "visible",
+        "viral",
+        "viro",
+        "conveniente"
+    ],
+    "unlocked_structures": [
+        "intento + infinitive",
+        "quiero + infinitive",
+        "negation with no",
+        "voy + adverb (ahora)",
+        "verb + lo (object pronoun)"
+    ],
+    "unlocked_tenses": [
+        "present"
+    ]
+}

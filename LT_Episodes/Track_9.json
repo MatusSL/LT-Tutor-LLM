@@ -1,0 +1,50 @@
+{
+    "id": 9,
+    "type": "mixed",
+    "unlocked_words": [
+        "saber",
+        "quiero",
+        "no",
+        "quiere",
+        "por qué",
+        "si",
+        "invitarme",
+        "imaginación",
+        "imaginarlo",
+        "venir",
+        "a",
+        "casa",
+        "visitarmi",
+        "invitarlo",
+        "ahora",
+        "iniciarlo",
+        "informarme",
+        "justificación",
+        "justificar",
+        "justificarme",
+        "explicación",
+        "inexplicable",
+        "explicar",
+        "pero",
+        "algo",
+        "te",
+        "explicarte",
+        "intento"
+    ],
+    "unlocked_structures": [
+        "quiero + infinitive",
+        "no + verb (negation)",
+        "quiere + infinitive (third person / formal)",
+        "por qué + clause",
+        "si + clause (if)",
+        "verb + me (reflexive / object pronoun)",
+        "verb + lo (object pronoun)",
+        "venir a + infinitive (verb of movement)",
+        "no intento + infinitive",
+        "pero + clause"
+    ],
+    "unlocked_tenses": [
+        "present",
+        "near future"
+    ]
+}

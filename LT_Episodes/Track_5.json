@@ -1,0 +1,53 @@
+{
+    "id": 5,
+    "type": "mixed",
+    "unlocked_words": [
+        "yo",
+        "quiero",
+        "no",
+        "cancelar",
+        "celebración",
+        "celebrar",
+        "ilustrar",
+        "informarme",
+        "información",
+        "te",
+        "obligación",
+        "obligar",
+        "obligarte",
+        "provocarte",
+        "lo",
+        "cancelarlo",
+        "regularlo",
+        "pero",
+        "perro",
+        "salvación",
+        "salvar",
+        "salvarlo",
+        "situación",
+        "situar",
+        "participación",
+        "participar",
+        "creación",
+        "crear",
+        "experimentación",
+        "experimentar",
+        "diferencia",
+        "influencia",
+        "existencia",
+        "consistencia",
+        "inconsistencia",
+        "incongruencia"
+    ],
+    "unlocked_structures": [
+        "emphatic subject with yo",
+        "yo no + verb (negation)",
+        "quiero + infinitive",
+        "verb + me (reflexive pronoun)",
+        "verb + te (object pronoun)",
+        "verb + lo (object pronoun)"
+    ],
+    "unlocked_tenses": [
+        "present"
+    ]
+}

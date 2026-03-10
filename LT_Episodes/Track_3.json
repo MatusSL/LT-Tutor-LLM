@@ -1,0 +1,36 @@
+{
+    "id": 3,
+    "type": "mixed",
+    "unlocked_words": [
+        "es",
+        "importante",
+        "no",
+        "diferente",
+        "constante",
+        "constantemente",
+        "legalmente",
+        "ilegalmente",
+        "real",
+        "realmente",
+        "normalmente",
+        "global",
+        "globalmente",
+        "general",
+        "generalmente",
+        "original",
+        "originalmente",
+        "digital",
+        "naturalmente",
+        "posible",
+        "probable",
+        "probablemente"
+    ],
+    "unlocked_structures": [
+        "es + adjective",
+        "negation with no",
+        "adverbs formed with -mente"
+    ],
+    "unlocked_tenses": [
+        "present"
+    ]
+}

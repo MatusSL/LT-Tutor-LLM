@@ -1,0 +1,48 @@
+{
+    "id": 10,
+    "type": "mixed",
+    "unlocked_words": [
+        "ventilar",
+        "separar",
+        "saber",
+        "venir",
+        "quiero",
+        "debo",
+        "intento",
+        "voy",
+        "segregar",
+        "donar",
+        "dono",
+        "no",
+        "crear",
+        "creo",
+        "como",
+        "comer",
+        "tarde",
+        "mañana",
+        "con",
+        "organizar",
+        "organizo",
+        "tenerlo",
+        "más",
+        "más tarde",
+        "obtener",
+        "sostener",
+        "mantener",
+        "entretener",
+        "vengo"
+    ],
+    "unlocked_structures": [
+        "present tense -o form (first person)",
+        "negation with no",
+        "voy a + infinitive (near future)",
+        "present tense used with future time context",
+        "verb + lo (object pronoun)",
+        "con + noun (with)",
+        "irregular present verbs (voy, vengo, tengo pattern)"
+    ],
+    "unlocked_tenses": [
+        "present",
+        "near future"
+    ]
+}

@@ -1,0 +1,38 @@
+{
+    "id": 8,
+    "type": "mixed",
+    "unlocked_words": [
+        "lo",
+        "la",
+        "quiero",
+        "verla",
+        "quiere",
+        "visitarme",
+        "no",
+        "por qué",
+        "venir",
+        "casa",
+        "a",
+        "debo",
+        "continuar",
+        "identificación",
+        "identificar",
+        "identificarlo",
+        "identificarlos",
+        "las",
+        "identificarlas"
+    ],
+    "unlocked_structures": [
+        "verb + la (feminine object pronoun)",
+        "quiere + infinitive (formal you / third person)",
+        "negation with no",
+        "yes-no questions by intonation",
+        "por qué + question",
+        "venir a + infinitive (verb of movement)",
+        "debo + infinitive (obligation)",
+        "verb + lo / la / los / las (object pronouns)"
+    ],
+    "unlocked_tenses": [
+        "present"
+    ]
+}

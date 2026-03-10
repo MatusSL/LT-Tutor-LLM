@@ -1,0 +1,48 @@
+{
+    "id": 27,
+    "type": "mixed",
+    "unlocked_words": [
+        "situación",
+        "global",
+        "cámara",
+        "digital",
+        "comprar",
+        "quiero",
+        "comprarla",
+        "coche",
+        "carro",
+        "auto",
+        "máquina",
+        "grande",
+        "casa",
+        "casas",
+        "ves",
+        "ver",
+        "puedes",
+        "puedo",
+        "encontrar",
+        "encuentro",
+        "quedar",
+        "quedo",
+        "rojo",
+        "en",
+        "comprado",
+        "comprado"
+    ],
+    "unlocked_structures": [
+        "adjective placement after noun (situación global, auto rojo)",
+        "gender and number agreement of adjectives (autos grandes)",
+        "definite vs indefinite articles (el/un, la/una)",
+        "object pronoun attachment to infinitive (comprarla, encontrarlo)",
+        "present tense questions without auxiliary (¿ves...?)",
+        "poder + infinitive as conversational shortcut (puedes ver)",
+        "negative present with object pronouns (no lo encuentro)",
+        "reflexive construction for 'to stay' (me quedo)",
+        "present perfect with haber (he comprado)",
+        "reflexive present perfect (me he comprado)"
+    ],
+    "unlocked_tenses": [
+        "present",
+        "present perfect"
+    ]
+}
