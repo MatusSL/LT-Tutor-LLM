@@ -1,16 +1,14 @@
 import unittest
 from unittest.mock import MagicMock
 
-from app.core.tutor_core import TutorCore
-from app.core.schemas.models import (
+from app.services.tutor_core import TutorCore
+from app.domain.schemas.models import (
     TutorResponse,
     Correction,
     ErrorCandidate,
     Language
 )
 
-
-# TODO: Test refroctored proces_user_input
 
 class TestTutorCore(unittest.TestCase):
 

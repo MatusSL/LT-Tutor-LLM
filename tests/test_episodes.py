@@ -1,9 +1,9 @@
-from app.core.tutor_core import Vocabulary
+from app.services.tutor_core import Vocabulary
 from typing import List
 import unittest
 import json
 
-from app.database.firestore import db
+# from app.database.firestore import db
 
 class TestEpisodes(unittest.TestCase):
 

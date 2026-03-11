@@ -19,9 +19,8 @@ class TutorResponseGenerator:
         self.runner = Runner()
 
     def generate_tutor_response_json(self, user_sentence: str) -> TutorResponse:
-        # TODO: Run as thread
-
         MAX_RETRIES = 3
+
         for attempt in range(MAX_RETRIES):
             response = self.runner.run_agent(self.agent, user_sentence)
             try:
@@ -31,9 +30,11 @@ class TutorResponseGenerator:
 
             except Exception:
                 if attempt == MAX_RETRIES - 1:
-                    raise RuntimeError("Failed to parse topic generation JSON content")
-
-        raise RuntimeError("Failed to parse topic generation JSON content")
+                    print(f"\n\n{user_sentence}\n\n")
+                    raise RuntimeError("Failed to tutor response JSON content")
+        
+        print(f"\n\n{user_sentence}\n\n")
+        raise RuntimeError("Failed to tutor response JSON content")
 
     def parse_response(self, response_text: str) -> TutorResponse:
         try:

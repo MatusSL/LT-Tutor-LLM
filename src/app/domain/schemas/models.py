@@ -85,3 +85,10 @@ class TutorResponse(BaseModel):
 
 class HighFrequencyWords(BaseModel):
     high_frequency_words: list[str]
+
+class UserInput(BaseModel):
+    user_sentence: str
+
+class ChatResponse(BaseModel):
+    response: str
+    tutor_response: TutorResponse

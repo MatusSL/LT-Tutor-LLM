@@ -1,16 +1,17 @@
 from app.domain.schemas.models import UserInputAnalysis
-from app.services.words_service import (
-    load_database_words,
-    insert_all_words,
-    update_misused_words,
-)
+# from app.services.words_service import (
+#     load_database_words,
+#     insert_all_words,
+#     update_misused_words,
+# )
 
 import string
 
 class Vocabulary:
     
     def __init__(self):
-        self.words: set[str] = load_database_words()
+        # self.words: set[str] = load_database_words()
+        self.words: set[str] = set()
     
 
     def find_new_words(self, used_words: set[str]) -> set[str]:
@@ -33,12 +34,12 @@ class Vocabulary:
         formatted_used_words = self.format_user_input(analysis.set_of_words)
         formatted_misused_words = self.format_user_input(analysis.misused_words)
 
-        update_misused_words(formatted_misused_words)
+        # update_misused_words(formatted_misused_words)
         
         new_words = self.find_new_words(formatted_used_words)
         verified_words = self.verify_new_words(new_words, formatted_misused_words)
         self.words.update(verified_words)
-        insert_all_words(verified_words)
+        # insert_all_words(verified_words)
 
         return verified_words
 

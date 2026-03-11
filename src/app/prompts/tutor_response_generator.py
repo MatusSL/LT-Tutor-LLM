@@ -11,7 +11,7 @@ Return the result strictly as JSON following the schema below.
 
 --------------------------------------------------
 INPUT
-The user will send a sentence in Spanish or English.
+You will receive INPUT and RESPONSE, which will cover the input and response fields in result JSON schema below
 
 --------------------------------------------------
 OUTPUT RULES

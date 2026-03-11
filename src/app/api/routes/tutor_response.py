@@ -1,8 +1,14 @@
-from fastapi import APIRouter
-from app.core.schemas.models import TutorResponse
+# from fastapi import FastAPI
 
-router = APIRouter(prefix="/tutor", tags=["tutor"])
+# from app.agents.tutor import Tutor
+# from app.domain.schemas.models import ChatResponse, UserInput
 
-@router.post("/tutor_response", response_model=TutorResponse)
-async def tutor_response() -> TutorResponse:
-    ...
+
+# app = FastAPI()
+# tutor = Tutor()
+
+
+# @app.post("/chat", response_model=ChatResponse)
+# def chat_endpoint(user_input: UserInput):
+#     result = tutor.chat(user_sentence=user_input.user_sentence)
+#     return result
