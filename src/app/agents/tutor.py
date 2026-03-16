@@ -1,6 +1,6 @@
 from app.agents.word_recommender import WordRecommender
 from app.agents.topic_generator import TopicGenerator
-from app.domain.schemas.models import OLLAMA_MODEL, ChatResponse
+from app.schemas.models import OLLAMA_MODEL, ChatResponse
 from app.services.tutor_core import TutorCore
 
 from langchain_ollama import ChatOllama

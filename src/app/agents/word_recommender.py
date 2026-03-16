@@ -6,7 +6,7 @@ from app.agents.runner import Runner
 from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
 
-from app.domain.schemas.models import QWEN_MODEL, HighFrequencyWords
+from app.schemas.models import QWEN_MODEL, HighFrequencyWords
 from app.prompts.word_recommender_prompt import HIGH_FREQUENCY_FILTER_PROMPT
 
 from app.services.words_service import insert_all_words

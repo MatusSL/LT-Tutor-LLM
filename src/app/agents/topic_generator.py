@@ -1,6 +1,6 @@
 import re
 
-from app.domain.schemas.models import QWEN_MODEL, Topic, Topics
+from app.schemas.models import QWEN_MODEL, Topic, Topics
 
 from app.prompts.topic_generator_prompt import TOPIC_GENERATOR_PROMPT
 from app.agents.runner import Runner

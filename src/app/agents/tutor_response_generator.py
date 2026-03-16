@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 
 from app.agents.runner import Runner
 
-from app.domain.schemas.models import QWEN_MODEL, Language, TutorResponse
+from app.schemas.models import QWEN_MODEL, Language, TutorResponse
 from app.prompts.tutor_response_generator import TUTOR_RESPONSE_PROMPT
 
 tutor_response_fallback = TutorResponse(

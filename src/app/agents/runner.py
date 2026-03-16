@@ -3,7 +3,7 @@ from langchain.messages import HumanMessage, AIMessage
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import Runnable
 from app.prompts.summarizer_prompt import SUMMARIZER_PROMPT
-from app.domain.schemas.models import OLLAMA_MODEL, LLMResponse
+from app.schemas.models import OLLAMA_MODEL, LLMResponse
 from langchain_ollama import ChatOllama
 
 
@@ -21,7 +21,7 @@ class Runner:
     def run_agent(self, agent: Runnable, user_input: str) -> str:
         try:
             self.context.append(HumanMessage(content=user_input))
-            response: LLMResponse = agent.invoke({"messages": self.context})        # type: ignore
+            response: LLMResponse = agent.invoke({"messages": self.context})  # type: ignore
             self.add_tokens(response)
 
             if self.total_tokens >= self.CONTEXT_WINDOW_LIMIT:
