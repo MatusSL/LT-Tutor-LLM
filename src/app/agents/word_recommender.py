@@ -1,4 +1,3 @@
-import json
 import re
 
 from app.agents.runner import Runner
@@ -9,44 +8,24 @@ from langchain_ollama import ChatOllama
 from app.schemas.models import QWEN_MODEL, HighFrequencyWords
 from app.prompts.word_recommender_prompt import HIGH_FREQUENCY_FILTER_PROMPT
 
-from app.services.words_service import insert_all_words
-
 high_freq_words_fallback = HighFrequencyWords(high_frequency_words=[])
 
 
 class WordRecommender:
-    def __init__(self) -> None:
+    def __init__(self, runner: Runner) -> None:
 
         self.agent = create_agent(
-            model=ChatOllama(model=QWEN_MODEL),
+            model=ChatOllama(model=QWEN_MODEL, temperature=0.15),
             system_prompt=HIGH_FREQUENCY_FILTER_PROMPT,
         )
 
-        self.runner = Runner()
-
-    def get_unlocked_words_from_episodes(self, last: int) -> set[str]:
-        unlocked_words: set[str] = set()
-
-        for episode_id in range(1, last + 1):
-            try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
-                with open(filename, "r", encoding="utf-8") as file:
-                    data = json.load(file)
-                    data_unlocked_words = data.get("unlocked_words", [])
-                    unlocked_words.update(data_unlocked_words)
-
-            except FileNotFoundError:
-                print(f"file not found: {episode_id=}")
-
-        insert_all_words(unlocked_words)
-        return unlocked_words
+        self.runner = runner
 
     def get_high_frequency_words_from_vocabulary(
-        self, last_episode: int
+        self, words: set[str]
     ) -> HighFrequencyWords:
 
-        unlocked_words = self.get_unlocked_words_from_episodes(last_episode)
-        formatted_unlocked_words = "\n".join(unlocked_words)
+        formatted_unlocked_words = "\n".join(words)
 
         MAX_RETRIES = 3
         for attempt in range(MAX_RETRIES):
@@ -74,4 +53,5 @@ class WordRecommender:
             except Exception:
                 pass
 
+        # ! Unhandled Exception
         raise ValueError("Model did not return valid Topics JSON")

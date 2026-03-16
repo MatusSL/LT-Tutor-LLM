@@ -5,6 +5,7 @@ from typing import Any
 from app.database.firestore import db
 
 UNLOCKED_WORDS = "unlocked_words"
+EPISODES = "episodes"
 
 
 def insert_word(word: str) -> None:
@@ -34,6 +35,34 @@ def insert_word(word: str) -> None:
 def insert_all_words(words: set[str]):
     for word in words:
         insert_word(word)
+
+
+def set_max_episode_completed(episode: int) -> None:
+    collection = db.collection(EPISODES)
+
+    doc_ref = collection.document("max_episode_completed")
+    doc = doc_ref.get()
+
+    exists = getattr(doc, "exists", False)
+    if not exists:
+        doc_ref.update({episode: episode})
+        return
+
+    current_max_completed_episode = get_max_episode_completed()
+    if episode < current_max_completed_episode:
+        return
+
+    doc_ref.update({episode: episode})
+
+
+def get_max_episode_completed() -> int:
+    doc = db.collection(EPISODES).document("max_episode_completed").get()
+
+    exists = getattr(doc, "exists", False)
+    if not exists:
+        return -1
+
+    return doc.get("episode")  # type: ignore
 
 
 def update_misused_words(misused_words: set[str]) -> None:
@@ -82,7 +111,7 @@ def update_high_frequency_words(high_freq_words: set[str]) -> None:
         doc_ref.update({"is_high_frequency_word": True})
 
 
-def load_database_words() -> set[str]:
+def load_vocabulary() -> set[str]:
     docs = db.collection(UNLOCKED_WORDS).stream()
 
     return {doc.id for doc in docs}

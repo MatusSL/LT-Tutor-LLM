@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Literal
+from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, Field
 from enum import Enum
 
@@ -8,16 +8,19 @@ QWEN_MODEL = "qwen2.5:7b"
 
 type LLMResponse = Dict[str, Any]
 
+type History = List[Dict[str, str]]
+
+
 class Language(str, Enum):
     ENGLISH = "english"
     SPANISH = "spanish"
     UNKNOWN = "unknown"
 
+
 @dataclass
 class TutorResult:
     is_correct: bool
     learned_words: set[str]
-
 
 
 @dataclass
@@ -44,31 +47,21 @@ class ErrorCandidate(BaseModel):
     suggested_correction: str
     explanation: str
 
-    
-class Correction(BaseModel):
-    original: str = Field(
-        description="The user's incorrect sentence."
-    )
 
-    corrected: str = Field(
-        description="The corrected version of the sentence."
-    )
+class Correction(BaseModel):
+    original: str = Field(description="The user's incorrect sentence.")
+
+    corrected: str = Field(description="The corrected version of the sentence.")
 
     error_candidates: list[ErrorCandidate]
 
 
 class TutorResponse(BaseModel):
-    input_spanish: str = Field(
-        description="User's input in Spanish."
-    )
+    input_spanish: str = Field(description="User's input in Spanish.")
 
-    input_english: str = Field(
-        description="User's input in English."
-    )
+    input_english: str = Field(description="User's input in English.")
 
-    input_language: Language = Field(
-        description="Detected input language"
-    )
+    input_language: Language = Field(description="Detected input language")
 
     response_spanish: str = Field(
         description="The main conversational response in Spanish."
@@ -79,15 +72,17 @@ class TutorResponse(BaseModel):
     )
 
     correction: Optional[Correction] = Field(
-        default=None,
-        description="Present only if the user made a mistake."
+        default=None, description="Present only if the user made a mistake."
     )
+
 
 class HighFrequencyWords(BaseModel):
     high_frequency_words: list[str]
 
+
 class UserInput(BaseModel):
     user_sentence: str
+
 
 class ChatResponse(BaseModel):
     response: str

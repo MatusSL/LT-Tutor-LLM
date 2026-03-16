@@ -1,49 +1,24 @@
-from app.agents.word_recommender import WordRecommender
-from app.agents.topic_generator import TopicGenerator
-from app.schemas.models import OLLAMA_MODEL, ChatResponse
-from app.services.tutor_core import TutorCore
-
+from app.schemas.models import OLLAMA_MODEL
 from langchain_ollama import ChatOllama
 from app.agents.runner import Runner
-from app.agents.tutor_response_generator import TutorResponseGenerator
 from langchain.agents import create_agent
 
 from app.prompts.conversational_prompt import CONVERSATIONAL_PROMPT
-
-import threading
+from app.schemas.models import History
+# import threading
 
 
 class Tutor:
-    def __init__(self) -> None:
+    def __init__(self, runner: Runner) -> None:
+        self.agent = create_agent(model=ChatOllama(model=OLLAMA_MODEL, temperature=0.7))
+        self.runner = runner
 
-        self.agent = create_agent(
-            model=ChatOllama(model=OLLAMA_MODEL), system_prompt=CONVERSATIONAL_PROMPT
+    def reply(self, user_input: str, history: History, vocabulary: set[str]) -> str:
+        conversation = "\n".join(f"{m['role']}: {m['content']}" for m in history)
+
+        prompt = CONVERSATIONAL_PROMPT.format(
+            vocabulary=vocabulary, history=conversation, user_input=user_input
         )
 
-        self.response_generator = TutorResponseGenerator()
-
-        self.runner = Runner()
-
-        self.tutor_core = TutorCore()
-        self.word_recommender = WordRecommender()
-        self.topic_generator = TopicGenerator()
-
-    def chat(self, user_sentence: str) -> ChatResponse:
-        response = self.runner.run_agent(self.agent, user_sentence)
-
-        turn = f"INPUT: {user_sentence}\nRESPONSE: {response}"
-        tutor_response = self.response_generator.generate_tutor_response_json(turn)
-
-        thread = threading.Thread(
-            target=self.tutor_core.process_user_input,
-            args=(tutor_response,),
-            daemon=True,
-        )
-
-        thread.start()
-
-        result = ChatResponse.model_validate(
-            {"response": response, "tutor_response": tutor_response}
-        )
-
-        return result
+        response = self.runner.run_agent(self.agent, prompt)
+        return response

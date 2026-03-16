@@ -31,6 +31,7 @@ class Runner:
             if len(self.context) > 0:
                 self.context.pop()
 
+            # ! Unhandled Exception
             raise Exception(f"Agent invocation failed: {e}")
 
         content = self.extract_content(response)

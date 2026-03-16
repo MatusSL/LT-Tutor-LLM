@@ -1,0 +1,100 @@
+from pathlib import Path
+
+from app.agents.tutor import Tutor
+from app.agents.topic_generator import TopicGenerator
+from app.agents.word_recommender import WordRecommender
+from app.agents.tutor_response_generator import TutorResponseGenerator
+
+from app.core.session_state import SessionState
+from app.core.session_manager import SessionManager
+
+from app.schemas.models import UserInputAnalysis, TutorResponse, Language
+
+from app.services.vocabulary import Vocabulary
+
+
+class TutorCore:
+    def __init__(
+        self,
+        tutor: Tutor,
+        topic_generator: TopicGenerator,
+        tutor_response_generator: TutorResponseGenerator,
+        word_recommender: WordRecommender,
+        vocabulary: Vocabulary,
+        episodes_dir: Path,
+    ):
+        self.tutor = tutor
+        self.vocabulary = vocabulary
+        self.topic_generator = topic_generator
+        self.word_recommender = word_recommender
+        self.tutor_response_generator = tutor_response_generator
+        self.session_manager = SessionManager(episodes_dir)
+        self.session_state = SessionState()
+
+    def handle_message(self, user_input: str) -> str:
+        if len(self.session_state.vocabulary) == 0:
+            # User didn't update completed episodes UI
+            self.session_state.vocabulary = self.vocabulary.words
+
+        reply = self.tutor.reply(
+            user_input=user_input,
+            history=self.session_state.history,
+            vocabulary=self.session_state.vocabulary,
+        )
+
+        self.session_state.history.append({"role": "user", "content": user_input})
+        self.session_state.history.append({"role": "assistant", "content": reply})
+
+        current_turn = self.session_state.history[-2:]
+        response_json: TutorResponse = (
+            self.tutor_response_generator.generate_tutor_response_json(current_turn)
+        )
+
+        self.session_state.language = response_json.input_language
+
+        if self.session_state.language == Language.UNKNOWN:
+            # TODO: Fallback
+            fallback = "Sorry, I couldn't understand that. Could you repeat it?"
+            return fallback
+
+        if self.session_state.language == Language.SPANISH:
+            correction = response_json.correction
+            is_correct = correction is None
+
+            if is_correct or len(correction.error_candidates) == 1:
+                analysis = self.analyize_response(response_json)
+                verified_new_words = self.vocabulary.verify_and_update_vocabulary(
+                    analysis
+                )
+
+                self.session_state.vocabulary.update(verified_new_words)
+
+        return reply
+
+    def analyize_response(self, tutor_response: TutorResponse) -> UserInputAnalysis:
+        used_words = set(tutor_response.input_spanish.split())
+        correction = tutor_response.correction
+
+        if correction is None:
+            return UserInputAnalysis(set_of_words=used_words, misused_words=set())
+
+        misused_words: set[str] = set()
+
+        for error_candidate in correction.error_candidates:
+            candidate_word = error_candidate.word
+            misused_words.add(candidate_word)
+
+        return UserInputAnalysis(set_of_words=used_words, misused_words=misused_words)
+
+    def get_explanations_from_analysis(self, response: TutorResponse) -> list[str]:
+        correction = response.correction
+
+        if correction is None:
+            return []
+
+        explanations: list[str] = []
+        for candidate in correction.error_candidates:
+            explanation = candidate.explanation
+            explanations.append(explanation)
+
+        return explanations

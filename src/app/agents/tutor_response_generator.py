@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 
 from app.agents.runner import Runner
 
-from app.schemas.models import QWEN_MODEL, Language, TutorResponse
+from app.schemas.models import QWEN_MODEL, History, Language, TutorResponse
 from app.prompts.tutor_response_generator import TUTOR_RESPONSE_PROMPT
 
 tutor_response_fallback = TutorResponse(
@@ -19,28 +19,29 @@ tutor_response_fallback = TutorResponse(
 
 
 class TutorResponseGenerator:
-    def __init__(self) -> None:
+    def __init__(self, runner: Runner) -> None:
+        self.agent = create_agent(model=ChatOllama(model=QWEN_MODEL, temperature=0.2))
+        self.runner = runner
+        self.turn: History = []
 
-        self.agent = create_agent(
-            model=ChatOllama(model=QWEN_MODEL), system_prompt=TUTOR_RESPONSE_PROMPT
-        )
-
-        self.runner = Runner()
-
-    def generate_tutor_response_json(self, user_sentence: str) -> TutorResponse:
+    def generate_tutor_response_json(self, turn: History) -> TutorResponse:
+        self.turn = turn
         MAX_RETRIES = 3
 
-        for attempt in range(MAX_RETRIES):
-            response = self.runner.run_agent(self.agent, user_sentence)
+        conversation = "\n".join(f"{msg['role']}: {msg['content']}" for msg in turn)
+        prompt = TUTOR_RESPONSE_PROMPT.format(conversation=conversation)
+
+        for _ in range(MAX_RETRIES):
+            response = self.runner.run_agent(self.agent, prompt)
+
             try:
                 response_json = self.parse_response(response)
                 return response_json
 
             except Exception:
-                if attempt == MAX_RETRIES - 1:
-                    pass
+                pass
 
-        return tutor_response_fallback
+        return self.get_tutor_response_fallback()
 
     def parse_response(self, response_text: str) -> TutorResponse:
         try:
@@ -57,7 +58,14 @@ class TutorResponseGenerator:
 
         return tutor_response_fallback
 
+    def get_tutor_response_fallback(self) -> TutorResponse:
+        user_sentence = self.turn[0]["content"]
 
-if __name__ == "__main__":
-    trg = TutorResponseGenerator()
-    print(trg.generate_tutor_response_json("hola como estas?"))
+        return TutorResponse(
+            input_spanish=user_sentence,
+            input_english=user_sentence,
+            input_language=Language.SPANISH,
+            response_spanish="Lo siento, hubo un problema procesando el mensaje. ¿Puedes intentarlo otra vez?",
+            response_english="Sorry, there was a problem processing the message. Could you try again?",
+            correction=None,
+        )

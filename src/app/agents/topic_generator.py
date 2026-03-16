@@ -17,14 +17,14 @@ topics_fallback: Topics = Topics(
 
 
 class TopicGenerator:
-    def __init__(self) -> None:
+    def __init__(self, runner: Runner) -> None:
 
         self.agent = create_agent(
-            model=ChatOllama(model=QWEN_MODEL),
+            model=ChatOllama(model=QWEN_MODEL, temperature=0.8),
             system_prompt=TOPIC_GENERATOR_PROMPT,
         )
 
-        self.runner = Runner()
+        self.runner = runner
 
     def suggest_topics_for_vocabulary(self, words: list[str]) -> Topics:
         unlocked_words = "\n".join(f"- {w}" for w in words)
