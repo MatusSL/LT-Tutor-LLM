@@ -1,11 +1,19 @@
 import re
 
-from app.domain.schemas.models import QWEN_MODEL, Topics
+from app.domain.schemas.models import QWEN_MODEL, Topic, Topics
 
 from app.prompts.topic_generator_prompt import TOPIC_GENERATOR_PROMPT
 from app.agents.runner import Runner
 from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
+
+topics_fallback: Topics = Topics(
+    topics=[
+        Topic(
+            display_name="FAIL", description="", difficulty="easy", suggested_goals=[]
+        )
+    ]
+)
 
 
 class TopicGenerator:
@@ -26,14 +34,13 @@ class TopicGenerator:
             response = self.runner.run_agent(self.agent, unlocked_words)
             try:
                 topics = self.parse_topics_response(response)
-                # print(topics)
                 return topics
 
             except Exception:
                 if attempt == MAX_RETRIES - 1:
-                    raise RuntimeError("Failed to parse topic generation JSON content")
+                    pass
 
-        raise RuntimeError("Failed to parse topic generation JSON content")
+        return topics_fallback
 
     def parse_topics_response(self, response_text: str) -> Topics:
         try:
@@ -48,4 +55,4 @@ class TopicGenerator:
             except Exception:
                 pass
 
-        raise ValueError("Model did not return valid Topics JSON")
+        return topics_fallback

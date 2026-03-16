@@ -9,6 +9,10 @@ from langchain_ollama import ChatOllama
 from app.domain.schemas.models import QWEN_MODEL, HighFrequencyWords
 from app.prompts.word_recommender_prompt import HIGH_FREQUENCY_FILTER_PROMPT
 
+from app.services.words_service import insert_all_words
+
+high_freq_words_fallback = HighFrequencyWords(high_frequency_words=[])
+
 
 class WordRecommender:
     def __init__(self) -> None:
@@ -20,25 +24,28 @@ class WordRecommender:
 
         self.runner = Runner()
 
-    def get_unlocked_words_from_vocabulary(self) -> list[str]:
-        unlocked_words: list[str] = []
+    def get_unlocked_words_from_episodes(self, last: int) -> set[str]:
+        unlocked_words: set[str] = set()
 
-        # MIN_COVERAGE = 0.7
-        for episode_id in range(1, 31):
+        for episode_id in range(1, last + 1):
             try:
                 filename = f"LT_Episodes/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     data = json.load(file)
                     data_unlocked_words = data.get("unlocked_words", [])
-                    unlocked_words.extend(data_unlocked_words)
+                    unlocked_words.update(data_unlocked_words)
 
             except FileNotFoundError:
                 print(f"file not found: {episode_id=}")
 
+        insert_all_words(unlocked_words)
         return unlocked_words
 
-    def get_high_frequency_words_from_vocabulary(self) -> HighFrequencyWords:
-        unlocked_words = self.get_unlocked_words_from_vocabulary()
+    def get_high_frequency_words_from_vocabulary(
+        self, last_episode: int
+    ) -> HighFrequencyWords:
+
+        unlocked_words = self.get_unlocked_words_from_episodes(last_episode)
         formatted_unlocked_words = "\n".join(unlocked_words)
 
         MAX_RETRIES = 3
@@ -50,9 +57,9 @@ class WordRecommender:
 
             except Exception:
                 if attempt == MAX_RETRIES - 1:
-                    raise RuntimeError("Failed to parse topic generation JSON content")
+                    pass
 
-        raise RuntimeError("Failed to parse topic generation JSON content")
+        return high_freq_words_fallback
 
     def parse_response(self, response_text: str) -> HighFrequencyWords:
         try:
@@ -68,9 +75,3 @@ class WordRecommender:
                 pass
 
         raise ValueError("Model did not return valid Topics JSON")
-
-
-if __name__ == "__main__":
-    wr = WordRecommender()
-    r = wr.get_high_frequency_words_from_vocabulary()
-    print(r)

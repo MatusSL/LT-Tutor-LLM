@@ -5,8 +5,17 @@ from langchain_ollama import ChatOllama
 
 from app.agents.runner import Runner
 
-from app.domain.schemas.models import QWEN_MODEL, TutorResponse
+from app.domain.schemas.models import QWEN_MODEL, Language, TutorResponse
 from app.prompts.tutor_response_generator import TUTOR_RESPONSE_PROMPT
+
+tutor_response_fallback = TutorResponse(
+    input_spanish="",
+    input_english="",
+    input_language=Language.SPANISH,
+    response_spanish="Lo siento, hubo un problema procesando el mensaje. ¿Puedes intentarlo otra vez?",
+    response_english="Sorry, there was a problem processing the message. Could you try again?",
+    correction=None,
+)
 
 
 class TutorResponseGenerator:
@@ -25,16 +34,13 @@ class TutorResponseGenerator:
             response = self.runner.run_agent(self.agent, user_sentence)
             try:
                 response_json = self.parse_response(response)
-                # print(topics)
                 return response_json
 
             except Exception:
                 if attempt == MAX_RETRIES - 1:
-                    print(f"\n\n{user_sentence}\n\n")
-                    raise RuntimeError("Failed to tutor response JSON content")
-        
-        print(f"\n\n{user_sentence}\n\n")
-        raise RuntimeError("Failed to tutor response JSON content")
+                    pass
+
+        return tutor_response_fallback
 
     def parse_response(self, response_text: str) -> TutorResponse:
         try:
@@ -49,7 +55,7 @@ class TutorResponseGenerator:
             except Exception:
                 pass
 
-        raise ValueError("Model did not return valid Topics JSON")
+        return tutor_response_fallback
 
 
 if __name__ == "__main__":

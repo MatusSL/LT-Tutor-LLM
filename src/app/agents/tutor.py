@@ -1,3 +1,5 @@
+from app.agents.word_recommender import WordRecommender
+from app.agents.topic_generator import TopicGenerator
 from app.domain.schemas.models import OLLAMA_MODEL, ChatResponse
 from app.services.tutor_core import TutorCore
 
@@ -9,6 +11,7 @@ from langchain.agents import create_agent
 from app.prompts.conversational_prompt import CONVERSATIONAL_PROMPT
 
 import threading
+
 
 class Tutor:
     def __init__(self) -> None:
@@ -22,33 +25,25 @@ class Tutor:
         self.runner = Runner()
 
         self.tutor_core = TutorCore()
+        self.word_recommender = WordRecommender()
+        self.topic_generator = TopicGenerator()
 
     def chat(self, user_sentence: str) -> ChatResponse:
         response = self.runner.run_agent(self.agent, user_sentence)
-        print(response)
 
         turn = f"INPUT: {user_sentence}\nRESPONSE: {response}"
-        tutor_response = self.response_generator.generate_tutor_response_json(
-            turn
-        )
+        tutor_response = self.response_generator.generate_tutor_response_json(turn)
 
         thread = threading.Thread(
             target=self.tutor_core.process_user_input,
             args=(tutor_response,),
-            daemon=True
+            daemon=True,
         )
 
         thread.start()
 
-        result = ChatResponse.model_validate({
-            "response": response,
-            "tutor_response": tutor_response 
-        })
+        result = ChatResponse.model_validate(
+            {"response": response, "tutor_response": tutor_response}
+        )
 
         return result
-
-if __name__ == "__main__":
-    tutor = Tutor()
-    r = tutor.chat("Hola amigo como estas?")
-
-    print(r)
