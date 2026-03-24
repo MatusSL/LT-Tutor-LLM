@@ -5,17 +5,17 @@ from app.agents.runner import Runner
 from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
 
-from app.schemas.models import QWEN_MODEL, HighFrequencyWords
+from app.schemas.models import HighFrequencyWords
 from app.prompts.word_recommender_prompt import HIGH_FREQUENCY_FILTER_PROMPT
 
 high_freq_words_fallback = HighFrequencyWords(high_frequency_words=[])
 
 
 class WordRecommender:
-    def __init__(self, runner: Runner) -> None:
+    def __init__(self, runner: Runner, model: ChatOllama) -> None:
 
         self.agent = create_agent(
-            model=ChatOllama(model=QWEN_MODEL, temperature=0.15),
+            model=model,
             system_prompt=HIGH_FREQUENCY_FILTER_PROMPT,
         )
 
@@ -53,5 +53,4 @@ class WordRecommender:
             except Exception:
                 pass
 
-        # ! Unhandled Exception
         raise ValueError("Model did not return valid Topics JSON")

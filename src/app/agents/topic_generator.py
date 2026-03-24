@@ -17,10 +17,9 @@ topics_fallback: Topics = Topics(
 
 
 class TopicGenerator:
-    def __init__(self, runner: Runner) -> None:
-
+    def __init__(self, runner: Runner, model: ChatOllama) -> None:
         self.agent = create_agent(
-            model=ChatOllama(model=QWEN_MODEL, temperature=0.8),
+            model=model,
             system_prompt=TOPIC_GENERATOR_PROMPT,
         )
 

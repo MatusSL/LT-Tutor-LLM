@@ -1,4 +1,4 @@
-from app.schemas.models import OLLAMA_MODEL
+from app.schemas.models import QWEN_MODEL
 from langchain_ollama import ChatOllama
 from app.agents.runner import Runner
 from langchain.agents import create_agent
@@ -9,8 +9,8 @@ from app.schemas.models import History
 
 
 class Tutor:
-    def __init__(self, runner: Runner) -> None:
-        self.agent = create_agent(model=ChatOllama(model=OLLAMA_MODEL, temperature=0.7))
+    def __init__(self, runner: Runner, model: ChatOllama) -> None:
+        self.agent = create_agent(model=model)
         self.runner = runner
 
     def reply(self, user_input: str, history: History, vocabulary: set[str]) -> str:

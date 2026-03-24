@@ -5,22 +5,12 @@ from langchain_ollama import ChatOllama
 
 from app.agents.runner import Runner
 
-from app.schemas.models import QWEN_MODEL, History, Language, TutorResponse
+from app.schemas.models import History, Language, TutorResponse
 from app.prompts.tutor_response_generator import TUTOR_RESPONSE_PROMPT
 
-tutor_response_fallback = TutorResponse(
-    input_spanish="",
-    input_english="",
-    input_language=Language.SPANISH,
-    response_spanish="Lo siento, hubo un problema procesando el mensaje. ¿Puedes intentarlo otra vez?",
-    response_english="Sorry, there was a problem processing the message. Could you try again?",
-    correction=None,
-)
-
-
 class TutorResponseGenerator:
-    def __init__(self, runner: Runner) -> None:
-        self.agent = create_agent(model=ChatOllama(model=QWEN_MODEL, temperature=0.2))
+    def __init__(self, runner: Runner, model: ChatOllama) -> None:
+        self.agent = create_agent(model=model)
         self.runner = runner
         self.turn: History = []
 
@@ -56,7 +46,7 @@ class TutorResponseGenerator:
             except Exception:
                 pass
 
-        return tutor_response_fallback
+        return self.get_tutor_response_fallback()
 
     def get_tutor_response_fallback(self) -> TutorResponse:
         user_sentence = self.turn[0]["content"]

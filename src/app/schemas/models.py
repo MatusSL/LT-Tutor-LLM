@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from enum import Enum
 
 OLLAMA_MODEL = "llama3.2"
-QWEN_MODEL = "qwen2.5:7b"
+QWEN_MODEL = "qwen2.5"
 
 type LLMResponse = Dict[str, Any]
 
