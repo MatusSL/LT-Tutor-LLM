@@ -12,20 +12,7 @@ export const getApiBaseUrl = () => {
   return trimTrailingSlash(configuredUrl);
 };
 
-export const getWebSocketUrl = () => {
-  const apiBaseUrl = getApiBaseUrl();
-
-  if (apiBaseUrl.startsWith("https://")) {
-    return `${apiBaseUrl.replace("https://", "wss://")}/ws`;
-  }
-
-  if (apiBaseUrl.startsWith("http://")) {
-    return `${apiBaseUrl.replace("http://", "ws://")}/ws`;
-  }
-
-  if (apiBaseUrl.startsWith("wss://") || apiBaseUrl.startsWith("ws://")) {
-    return `${apiBaseUrl}/ws`;
-  }
-
-  return `ws://${apiBaseUrl}/ws`;
+export const getApiUrl = (path: string) => {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${getApiBaseUrl()}${normalizedPath}`;
 };

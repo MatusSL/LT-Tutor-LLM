@@ -15,7 +15,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-import { getWebSocketUrl } from "@/constants/api";
+import {
+  checkTutorServer,
+  requestEpisodeTopics,
+  requestSavedEpisodeTopics,
+  sendChatMessage,
+} from "@/services/tutor-api";
 
 type ErrorCandidate = {
   word: string;
@@ -339,7 +344,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [socketReady, setSocketReady] = useState(false);
+  const [serverReady, setServerReady] = useState(false);
   const [setupStep, setSetupStep] = useState<SetupStep>("options");
   const [setupError, setSetupError] = useState<string | null>(null);
   const [setupLoading, setSetupLoading] = useState(false);
@@ -347,149 +352,70 @@ export default function ChatScreen() {
   const [activeEpisode, setActiveEpisode] = useState<number | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
-  const socketRef = useRef<WebSocket | null>(null);
-  const pendingUserMessageIdRef = useRef<string | null>(null);
-  const setupLoadingRef = useRef(false);
-  const setupStepRef = useRef<SetupStep>("options");
 
   const scrollToBottom = () =>
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
   useEffect(() => {
-    setupLoadingRef.current = setupLoading;
-  }, [setupLoading]);
+    let active = true;
 
-  useEffect(() => {
-    setupStepRef.current = setupStep;
-  }, [setupStep]);
+    const connect = async () => {
+      try {
+        const isHealthy = await checkTutorServer();
 
-  useEffect(() => {
-    const socket = new WebSocket(getWebSocketUrl());
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      setSocketReady(true);
-      setSetupError(null);
-    };
-
-    socket.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
-
-      if (
-        payload.type === "episode_topics" ||
-        payload.type === "saved_episode_topics"
-      ) {
-        const topics: Topic[] = payload.topics?.topics ?? [];
-        const topicNames = topics.map((topic) => topic.display_name);
-
-        setActiveEpisode(payload.episode);
-        setSelectedEpisode(payload.episode);
-        setMessages([buildIntroMessage(topicNames)]);
-        setSetupLoading(false);
-        setSetupError(null);
-        setSetupStep("chat");
-        return;
-      }
-
-      if (payload.type === "chat_response") {
-        const userMessageId = pendingUserMessageIdRef.current;
-
-        const tutorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: "tutor",
-          tutor: payload.data.tutor_response,
-          time: getTime(),
-        };
-
-        setMessages((previous) => {
-          const updated = previous
-            .filter((message) => message.id !== "loading")
-            .map((message) =>
-              message.id === userMessageId
-                ? { ...message, tutor: payload.data.tutor_response }
-                : message,
-            );
-
-          return [...updated, tutorMessage];
-        });
-
-        pendingUserMessageIdRef.current = null;
-        setSendingMessage(false);
-        scrollToBottom();
-        return;
-      }
-
-      if (payload.type === "error") {
-        if (setupLoadingRef.current) {
-          setSetupLoading(false);
-          setSetupError(payload.message ?? "Could not prepare your chat.");
+        if (!active) {
           return;
         }
 
-        pendingUserMessageIdRef.current = null;
-        setSendingMessage(false);
-        setMessages((previous) => [
-          ...previous.filter((message) => message.id !== "loading"),
-          {
-            id: (Date.now() + 1).toString(),
-            type: "tutor",
-            time: getTime(),
-            tutor: {
-              input_spanish: "",
-              input_english: "",
-              input_language: "unknown",
-              response_spanish:
-                "Lo siento, hubo un error. Por favor intenta de nuevo.",
-              response_english:
-                payload.message ?? "Sorry, there was an error. Please try again.",
-              correction: null,
-            },
-          },
-        ]);
-        scrollToBottom();
-      }
-    };
+        setServerReady(isHealthy);
+        setSetupError(isHealthy ? null : "Could not connect to the tutor server.");
+      } catch {
+        if (!active) {
+          return;
+        }
 
-    socket.onerror = () => {
-      setSocketReady(false);
-
-      if (setupStepRef.current !== "chat") {
+        setServerReady(false);
         setSetupError("Could not connect to the tutor server.");
-        setSetupLoading(false);
       }
     };
 
-    socket.onclose = () => {
-      setSocketReady(false);
-      socketRef.current = null;
-    };
+    void connect();
 
     return () => {
-      socket.close();
+      active = false;
     };
   }, []);
 
-  const sendSocketMessage = (payload: Record<string, unknown>) => {
-    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      throw new Error("Socket is not connected.");
-    }
+  const applyEpisodeTopics = (payload: { episode: number; topics?: { topics?: Topic[] } }) => {
+    const topics: Topic[] = payload.topics?.topics ?? [];
+    const topicNames = topics.map((topic) => topic.display_name);
 
-    socketRef.current.send(JSON.stringify(payload));
+    setActiveEpisode(payload.episode);
+    setSelectedEpisode(payload.episode);
+    setMessages([buildIntroMessage(topicNames)]);
+    setSetupLoading(false);
+    setSetupError(null);
+    setSetupStep("chat");
   };
 
-  const initializeChatFromSavedEpisode = () => {
+  const initializeChatFromSavedEpisode = async () => {
     setSetupError(null);
     setSetupLoading(true);
 
     try {
-      sendSocketMessage({ type: "load_saved_episode" });
-    } catch {
+      const payload = await requestSavedEpisodeTopics();
+      applyEpisodeTopics(payload);
+    } catch (error) {
       setSetupLoading(false);
-      setSetupError("Could not connect to the tutor server.");
+      setSetupError(
+        error instanceof Error
+          ? error.message
+          : "Could not connect to the tutor server.",
+      );
     }
   };
 
-  const initializeChatFromSelection = () => {
+  const initializeChatFromSelection = async () => {
     if (selectedEpisode === 0) {
       return;
     }
@@ -498,14 +424,19 @@ export default function ChatScreen() {
     setSetupLoading(true);
 
     try {
-      sendSocketMessage({ type: "set_episode", episode: selectedEpisode });
-    } catch {
+      const payload = await requestEpisodeTopics(selectedEpisode);
+      applyEpisodeTopics(payload);
+    } catch (error) {
       setSetupLoading(false);
-      setSetupError("Could not connect to the tutor server.");
+      setSetupError(
+        error instanceof Error
+          ? error.message
+          : "Could not connect to the tutor server.",
+      );
     }
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const text = input.trim();
     if (!text || sendingMessage || setupStep !== "chat") {
       return;
@@ -523,16 +454,33 @@ export default function ChatScreen() {
 
     setMessages((previous) => [...previous, userMessage, loadingMessage]);
     setSendingMessage(true);
-    pendingUserMessageIdRef.current = userMessage.id;
     scrollToBottom();
 
     try {
-      sendSocketMessage({
-        type: "chat",
-        user_sentence: text,
+      const payload = await sendChatMessage(text);
+
+      const tutorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "tutor",
+        tutor: payload.tutor_response,
+        time: getTime(),
+      };
+
+      setMessages((previous) => {
+        const updated = previous
+          .filter((message) => message.id !== "loading")
+          .map((message) =>
+            message.id === userMessage.id
+              ? { ...message, tutor: payload.tutor_response }
+              : message,
+          );
+
+        return [...updated, tutorMessage];
       });
-    } catch {
-      pendingUserMessageIdRef.current = null;
+
+      setSendingMessage(false);
+      scrollToBottom();
+    } catch (error) {
       setSendingMessage(false);
       setMessages((previous) => [
         ...previous.filter((message) => message.id !== "loading"),
@@ -546,7 +494,10 @@ export default function ChatScreen() {
             input_language: "unknown",
             response_spanish:
               "Lo siento, hubo un error. Por favor intenta de nuevo.",
-            response_english: "Sorry, there was an error. Please try again.",
+            response_english:
+              error instanceof Error
+                ? error.message
+                : "Sorry, there was an error. Please try again.",
             correction: null,
           },
         },
@@ -602,7 +553,7 @@ export default function ChatScreen() {
 
       {setupStep === "options" && (
         <SetupCard
-          socketReady={socketReady}
+          socketReady={serverReady}
           loading={setupLoading}
           error={setupError}
           onSkip={initializeChatFromSavedEpisode}
@@ -655,18 +606,18 @@ export default function ChatScreen() {
                 placeholderTextColor="#C7C7CC"
                 multiline
                 maxLength={500}
-                editable={!sendingMessage && socketReady}
+                editable={!sendingMessage && serverReady}
               />
             </View>
             <TouchableOpacity
               style={[
                 styles.sendBtn,
-                input.trim() && !sendingMessage && socketReady
+                input.trim() && !sendingMessage && serverReady
                   ? styles.sendBtnActive
                   : styles.sendBtnInactive,
               ]}
               onPress={sendMessage}
-              disabled={!input.trim() || sendingMessage || !socketReady}
+              disabled={!input.trim() || sendingMessage || !serverReady}
             >
               <Text style={styles.sendIcon}>↑</Text>
             </TouchableOpacity>

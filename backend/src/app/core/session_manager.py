@@ -6,6 +6,15 @@ class SessionManager:
     def __init__(self, episodes_dir: Path) -> None:
         self.episodes_dir = episodes_dir
 
+    def get_episode_path(self, episode_id: int) -> Path:
+        current_episode = f"Track_{episode_id}.json"
+        direct_path = self.episodes_dir / current_episode
+
+        if direct_path.exists():
+            return direct_path
+
+        return self.episodes_dir / "spanish" / current_episode
+
     def get_unlocked_words_from_episodes(self, start: int, end: int) -> set[str]:
         if start == 0:
             start = 1
@@ -13,9 +22,7 @@ class SessionManager:
         unlocked_words: set[str] = set()
         for episode_id in range(start, end + 1):
             try:
-                # filename = f"LT_Episodes/Track_{episode_id}.json"
-                current_episode = f"Track_{episode_id}.json"
-                filename = self.episodes_dir / current_episode
+                filename = self.get_episode_path(episode_id)
 
                 with open(filename, "r", encoding="utf-8") as file:
                     data = json.load(file)

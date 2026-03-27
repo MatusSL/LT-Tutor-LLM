@@ -11,7 +11,7 @@ import {
 import { router } from "expo-router";
 
 import { FontAwesome } from "@expo/vector-icons";
-import { requestEpisodeTopics } from "@/services/tutor-socket";
+import { requestEpisodeTopics } from "@/services/tutor-api";
 
 export default function Lectures() {
   const [selectedLecture, setSelectedLecture] = useState<number>(0);

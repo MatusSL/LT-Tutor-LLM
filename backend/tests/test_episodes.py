@@ -7,13 +7,15 @@ import json
 
 
 class TestEpisodes(unittest.TestCase):
+    episode_base_path = "LT_Episodes/spanish"
+
     def test_episodes_id_order(self):
         first_episode = 1
         last_episode = 30
 
         for episode_id in range(first_episode, last_episode + 1):
             try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
+                filename = f"{self.episode_base_path}/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     current_episode = json.load(file)
                     current_episode_id = current_episode["id"]
@@ -31,7 +33,7 @@ class TestEpisodes(unittest.TestCase):
         last_episode = 30
         for episode_id in range(first_episode, last_episode + 1):
             try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
+                filename = f"{self.episode_base_path}/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     episode_data = json.load(file)
                     unlocked_words = episode_data.get("unlocked_words", [])
@@ -58,7 +60,7 @@ class TestEpisodes(unittest.TestCase):
         last_episode = 30
         for episode_id in range(first_episode, last_episode + 1):
             try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
+                filename = f"{self.episode_base_path}/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     episode_data = json.load(file)
                     unlocked_words = episode_data.get("unlocked_words", [])
@@ -82,7 +84,7 @@ class TestEpisodes(unittest.TestCase):
         last_episode = 30
         for episode_id in range(first_episode, last_episode + 1):
             try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
+                filename = f"{self.episode_base_path}/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     episode_data = json.load(file)
                     self.assertIn(
@@ -106,7 +108,7 @@ class TestEpisodes(unittest.TestCase):
         last_episode = 30
         for episode_id in range(first_episode, last_episode + 1):
             try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
+                filename = f"{self.episode_base_path}/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     episode_data = json.load(file)
                     unlocked_words = episode_data.get("unlocked_words", [])
@@ -123,7 +125,7 @@ class TestEpisodes(unittest.TestCase):
         last_episode = 30
         for episode_id in range(first_episode, last_episode + 1):
             try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
+                filename = f"{self.episode_base_path}/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     episode_data = json.load(file)
                     tenses = episode_data.get("unlocked_tenses", [])
@@ -146,7 +148,7 @@ class TestEpisodes(unittest.TestCase):
 
         for episode_id in range(first_episode, last_episode + 1):
             try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
+                filename = f"{self.episode_base_path}/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     episode_data = json.load(file)
                     words = episode_data.get("unlocked_words", [])
@@ -166,7 +168,7 @@ class TestEpisodes(unittest.TestCase):
         last_episode = 30
         for episode_id in range(first_episode, last_episode + 1):
             try:
-                filename = f"LT_Episodes/Track_{episode_id}.json"
+                filename = f"{self.episode_base_path}/Track_{episode_id}.json"
                 with open(filename, "r", encoding="utf-8") as file:
                     json.load(file)
             except json.JSONDecodeError:
