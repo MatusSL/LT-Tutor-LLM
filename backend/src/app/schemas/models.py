@@ -3,8 +3,10 @@ from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, Field
 from enum import Enum
 
-OLLAMA_MODEL = "llama3.2"
-QWEN_MODEL = "qwen2.5"
+QWEN25_7B_MODEL = "qwen2.5:7b"
+QWEN25_14B_MODEL = "qwen2.5:14b"
+LLAMA32_MODEL = "llama3.2:latest"
+LLAMA31 = "llama3.1:8b"
 
 type LLMResponse = Dict[str, Any]
 
@@ -14,7 +16,13 @@ type History = List[Dict[str, str]]
 class Language(str, Enum):
     ENGLISH = "english"
     SPANISH = "spanish"
+    ARABIC = "arabic"
+    FRENCH = "french"
+    GERMAN = "german"
+    GREEK = "greek"
+    ITALIAN = "italian"
     UNKNOWN = "unknown"
+    # JAPANEESE = "japaneese"
 
 
 @dataclass
@@ -87,3 +95,4 @@ class UserInput(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     tutor_response: TutorResponse
+    response_audio: str | None = None

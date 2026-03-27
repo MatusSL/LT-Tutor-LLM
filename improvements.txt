@@ -1,0 +1,88 @@
+SPEED UP CONVERSATION FLOW — PLANNED IMPROVEMENTS
+===================================================
+
+Current bottleneck: Each chat message takes 7-18s (up to 40s worst case)
+because three steps run sequentially:
+  1. LLM reply (llama3.1:8b)           ~3-5s
+  2. JSON analysis (qwen2.5:14b)       ~3-10s (30s with retries)
+  3. TTS via gTTS                       ~1-3s
+
+
+IMPROVEMENT 1: Ollama JSON Mode
+--------------------------------
+Effort: 5 minutes | Impact: eliminates worst-case 40s scenarios
+
+Add format="json" to the TutorResponseGenerator's ChatOllama in
+backend/src/app/core/build_tutor_core.py:40
+
+  ChatOllama(model=QWEN25_14B_MODEL, temperature=0.2, format="json")
+
+Forces Ollama to output valid JSON at the grammar level. The retry loop
+(tutor_response_generator.py:26-34) that fires up to 3x becomes a safety
+net that almost never triggers.
+
+
+IMPROVEMENT 2: Two-Phase Response (show reply instantly)
+---------------------------------------------------------
+Effort: 2-3 hours | Impact: reply appears in 3-5s instead of 7-18s
+
+Split /chat into two endpoints so the frontend shows the tutor's text
+reply after ~3-5s, then fills in corrections/audio when ready.
+
+Backend — split handle_message into two methods (tutor_core.py):
+  - generate_reply(user_input) -> str
+      Calls tutor.reply(), appends to history, returns text. ~3-5s.
+  - analyze_last_turn() -> ChatResponse
+      Calls tutor_response_generator, does vocab update, returns full
+      response with TutorResponse + audio. ~3-10s.
+
+Backend — two endpoints (main.py):
+  POST /chat         { user_sentence: str }  -> { response: str }
+  POST /chat/analyze                         -> ChatResponse (with audio)
+
+/chat/analyze uses the history already appended by /chat — no args needed.
+
+Frontend — tutor-api.ts:
+  - sendChatMessage(text) calls /chat, returns { response: string }
+  - fetchChatAnalysis() calls /chat/analyze, returns full response
+
+Frontend — chat.tsx sendMessageWithText:
+  1. Call /chat -> get reply text -> immediately show tutor bubble
+  2. Call /chat/analyze in background -> when it resolves, update tutor
+     bubble with translations/corrections, update user bubble with
+     correction data, play audio
+
+
+IMPROVEMENT 3: Parallel TTS
+-----------------------------
+Effort: 15 minutes | Impact: saves 1-3s within the analyze call
+
+Inside /chat/analyze, run TTS concurrently with the JSON analysis:
+
+  from concurrent.futures import ThreadPoolExecutor
+
+  with ThreadPoolExecutor() as pool:
+      tts_future = pool.submit(tts_service.text_to_speech_base64, reply_text)
+      tutor_response = tutor_core.analyze_last_turn()
+      audio = tts_future.result()
+
+Uses the raw reply text from history for TTS input.
+
+
+FILES TO MODIFY
+----------------
+backend/src/app/core/build_tutor_core.py   — Add format="json"
+backend/src/app/core/tutor_core.py         — Split handle_message
+backend/main.py                            — Add /chat/analyze, ThreadPoolExecutor
+backend/src/app/schemas/models.py          — Add ReplyResponse model
+frontend/my-app/services/tutor-api.ts      — Add fetchChatAnalysis()
+frontend/my-app/app/(tabs)/chat.tsx        — Two-phase rendering
+
+
+EXPECTED PERFORMANCE
+---------------------
+                        Before      After
+Time to see reply       7-18s       3-5s
+Time to see corrections 7-18s       6-10s
+Time to hear audio      8-21s       6-10s
+Worst case total        40s         10-15s

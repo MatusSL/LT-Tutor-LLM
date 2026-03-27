@@ -1,9 +1,14 @@
-from fastapi import FastAPI
+import os
+import tempfile
+from pathlib import Path
+
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.core.build_tutor_core import build_tutor_core
 from app.schemas.models import ChatResponse, Topics, UserInput
+from app.services import stt_service, tts_service
 
 app = FastAPI()
 
@@ -30,7 +35,24 @@ def health_check():
 def chat_endpoint(user_input: UserInput):
     result = tutor_core.handle_message(user_input=user_input.user_sentence)
     print(f"\nCHAT RESPONSE: --------{result}\n")
+    if result.tutor_response.response_spanish:
+        result.response_audio = tts_service.text_to_speech_base64(
+            result.tutor_response.response_spanish
+        )
     return result
+
+
+@app.post("/transcribe")
+async def transcribe_endpoint(audio: UploadFile = File(...)):
+    suffix = Path(audio.filename or "audio.m4a").suffix or ".m4a"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(await audio.read())
+        tmp_path = tmp.name
+    try:
+        text = stt_service.transcribe(tmp_path)
+        return {"text": text}
+    finally:
+        os.unlink(tmp_path)
 
 
 

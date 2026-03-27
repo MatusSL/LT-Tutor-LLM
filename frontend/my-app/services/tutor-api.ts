@@ -48,6 +48,7 @@ export type TutorApiChatResponse = {
       }[];
     } | null;
   };
+  response_audio: string | null;
 };
 
 const requestJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -99,3 +100,34 @@ export const sendChatMessage = (userSentence: string) =>
     method: "POST",
     body: JSON.stringify({ user_sentence: userSentence }),
   });
+
+export const transcribeAudio = async (audioUri: string): Promise<string> => {
+  const filename = audioUri.split("/").pop() ?? "recording.m4a";
+  const formData = new FormData();
+
+  if (audioUri.startsWith("blob:")) {
+    // Web (Expo web / simulator): fetch the blob URI to get a real Blob
+    const blobResponse = await fetch(audioUri);
+    const blob = await blobResponse.blob();
+    formData.append("audio", blob, filename);
+  } else {
+    // Native iOS/Android: React Native file URI pattern
+    formData.append("audio", {
+      uri: audioUri,
+      name: filename,
+      type: "audio/m4a",
+    } as unknown as Blob);
+  }
+
+  const response = await fetch(getApiUrl("/transcribe"), {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Transcription failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { text: string };
+  return data.text;
+};

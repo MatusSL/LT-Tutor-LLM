@@ -115,30 +115,44 @@ Rules:
 
 correction
 
-Include ONLY if the learner made meaningful language mistakes.
+CRITICAL: "correction" is about the LEARNER'S INPUT only.
+NEVER put the assistant's response text into "original" or "corrected".
 
-Do NOT count these as mistakes:
-- missing accent marks
-- capitalization differences
-- punctuation differences
-- inverted question marks (¿)
+Default is null. Only include a correction object if the learner made a real
+grammar, vocabulary, spelling, word order, or agreement mistake.
 
-Example that should NOT produce corrections:
-hola como estas
+Do NOT flag these as mistakes:
+- missing accent marks (estás vs estas)
+- missing or wrong capitalization
+- missing punctuation
+- missing inverted question/exclamation marks (¿ !)
+- informal or casual phrasing
 
-Example that SHOULD produce corrections:
-hola como estas tu eres bien
+Examples that should produce "correction": null
+  "Hola como estas"       → null  (only missing accents/punctuation)
+  "Estoy bien gracias"    → null  (correct, just informal)
+  "Hola amigo cómo estás" → null  (correct sentence)
+
+Example that SHOULD produce a correction:
+  "yo soy bien" → correction with error on "soy" (should be "estoy")
 
 --------------------------------
 
 original
-The learner's original sentence.
+Copy the learner's message exactly as they wrote it. No changes.
 
 corrected
-The correct Spanish version.
+The learner's OWN sentence rewritten correctly in Spanish.
+- Must resemble the original sentence, just fixed
+- Must NOT be the assistant's reply or a new sentence
+- Must NOT include parenthetical notes, explanations, or extra text
+- Only the corrected sentence, nothing else
+
+WRONG: user said "yo soy bien" → corrected: "¡Estoy bien! ¿Y tú?"  (this is a reply, not a correction)
+RIGHT: user said "yo soy bien" → corrected: "Yo estoy bien"         (same sentence, fixed)
 
 error_candidates
-List every detected mistake.
+List every real grammatical mistake found.
 
 Each item must include:
 - incorrect word
@@ -147,7 +161,7 @@ Each item must include:
 - suggested correction
 - short beginner-friendly explanation in English
 
-If the sentence has NO mistakes:
+If the sentence has NO real mistakes:
 
 "correction": null
 

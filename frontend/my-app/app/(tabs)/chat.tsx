@@ -14,12 +14,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
+import { File as FSFile, Paths } from "expo-file-system";
 
 import {
   checkTutorServer,
   requestEpisodeTopics,
   requestSavedEpisodeTopics,
   sendChatMessage,
+  transcribeAudio,
 } from "@/services/tutor-api";
 
 type ErrorCandidate = {
@@ -350,11 +353,82 @@ export default function ChatScreen() {
   const [setupLoading, setSetupLoading] = useState(false);
   const [selectedEpisode, setSelectedEpisode] = useState(0);
   const [activeEpisode, setActiveEpisode] = useState<number | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   const scrollToBottom = () =>
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+
+  const playResponseAudio = async (base64Audio: string) => {
+    try {
+      if (soundRef.current) {
+        await soundRef.current.unloadAsync();
+        soundRef.current = null;
+      }
+      const binaryStr = atob(base64Audio);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const audioFile = new FSFile(Paths.cache, "tutor_response.mp3");
+      audioFile.write(bytes);
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+      const { sound } = await Audio.Sound.createAsync({ uri: audioFile.uri });
+      soundRef.current = sound;
+      await sound.playAsync();
+    } catch {
+      // Non-critical — silently ignore playback errors
+    }
+  };
+
+  const startRecording = async () => {
+    const { status } = await Audio.requestPermissionsAsync();
+    if (status !== "granted") return;
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+    });
+    const { recording } = await Audio.Recording.createAsync(
+      Audio.RecordingOptionsPresets.HIGH_QUALITY,
+    );
+    recordingRef.current = recording;
+    setIsRecording(true);
+  };
+
+  const stopRecording = async () => {
+    if (!recordingRef.current) return;
+    setIsRecording(false);
+    setIsTranscribing(true);
+    await recordingRef.current.stopAndUnloadAsync();
+    const uri = recordingRef.current.getURI();
+    recordingRef.current = null;
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    if (!uri) {
+      setIsTranscribing(false);
+      return;
+    }
+    try {
+      const text = await transcribeAudio(uri);
+      setIsTranscribing(false);
+      if (text.trim()) {
+        await sendMessageWithText(text);
+      }
+    } catch {
+      setIsTranscribing(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      void stopRecording();
+    } else {
+      void startRecording();
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -436,13 +510,8 @@ export default function ChatScreen() {
     }
   };
 
-  const sendMessage = async () => {
-    const text = input.trim();
-    if (!text || sendingMessage || setupStep !== "chat") {
-      return;
-    }
-
-    setInput("");
+  const sendMessageWithText = async (text: string) => {
+    if (!text || sendingMessage || setupStep !== "chat") return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -474,12 +543,15 @@ export default function ChatScreen() {
               ? { ...message, tutor: payload.tutor_response }
               : message,
           );
-
         return [...updated, tutorMessage];
       });
 
       setSendingMessage(false);
       scrollToBottom();
+
+      if (payload.response_audio) {
+        void playResponseAudio(payload.response_audio);
+      }
     } catch (error) {
       setSendingMessage(false);
       setMessages((previous) => [
@@ -503,6 +575,13 @@ export default function ChatScreen() {
         },
       ]);
     }
+  };
+
+  const sendMessage = async () => {
+    const text = input.trim();
+    if (!text) return;
+    setInput("");
+    await sendMessageWithText(text);
   };
 
   const renderItem = ({ item }: { item: Message }) => {
@@ -597,18 +676,6 @@ export default function ChatScreen() {
           />
 
           <View style={styles.inputBar}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                value={input}
-                onChangeText={setInput}
-                placeholder="Write in Spanish or English..."
-                placeholderTextColor="#C7C7CC"
-                multiline
-                maxLength={500}
-                editable={!sendingMessage && serverReady}
-              />
-            </View>
             <TouchableOpacity
               style={[
                 styles.sendBtn,
@@ -621,6 +688,39 @@ export default function ChatScreen() {
             >
               <Text style={styles.sendIcon}>↑</Text>
             </TouchableOpacity>
+            
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={input}
+                onChangeText={setInput}
+                placeholder="Write or speak in Spanish or English..."
+                placeholderTextColor="#C7C7CC"
+                multiline
+                maxLength={500}
+                editable={!sendingMessage && !isRecording && serverReady}
+              />
+             </View>
+      
+            <TouchableOpacity
+              style={[
+                styles.micBtn,
+                isRecording ? styles.micBtnActive : styles.micBtnInactive,
+              ]}
+              onPress={toggleRecording}
+              disabled={sendingMessage || isTranscribing || !serverReady}
+            >
+              {isTranscribing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons
+                  name={isRecording ? "stop" : "mic"}
+                  size={20}
+                  color="#FFFFFF"
+                />
+              )}
+            </TouchableOpacity>
+            
           </View>
         </KeyboardAvoidingView>
       )}
@@ -987,6 +1087,20 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "#E5E5EA",
     backgroundColor: "#FFFFFF",
+    gap: 8,
+  },
+  micBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  micBtnInactive: {
+    backgroundColor: "#8E8E93",
+  },
+  micBtnActive: {
+    backgroundColor: "#FF3B30",
   },
   inputWrapper: {
     flex: 1,
@@ -994,7 +1108,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    marginRight: 10,
     maxHeight: 120,
   },
   input: {
