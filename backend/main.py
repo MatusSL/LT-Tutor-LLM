@@ -34,6 +34,12 @@ class EpisodeResponse(BaseModel):
     topics: Topics
 
 
+class SavedEpisodeResponse(BaseModel):
+    status: str
+    episode: int
+    topics: Topics
+
+
 def build_episode_response(active_tutor_core, episode: int) -> EpisodeResponse:
     unlocked_words = active_tutor_core.session_manager.get_unlocked_words_from_episodes(
         1, episode
@@ -50,6 +56,15 @@ def build_episode_response(active_tutor_core, episode: int) -> EpisodeResponse:
     )
 
     return EpisodeResponse(status="ok", episode=episode, topics=topics)
+
+
+def build_saved_episode_response(active_tutor_core) -> SavedEpisodeResponse:
+    episode = active_tutor_core.vocabulary.get_max_episode_completed()
+    if episode <= 0:
+        raise ValueError("No completed episode has been saved yet.")
+
+    episode_response = build_episode_response(active_tutor_core, episode)
+    return SavedEpisodeResponse(**episode_response.model_dump(mode="json"))
 
 
 @app.websocket("/ws")
@@ -71,9 +86,29 @@ async def websocket_endpoint(websocket: WebSocket):
                     )
                     continue
 
+                socket_tutor_core.vocabulary.set_max_episode_completed(episode)
                 episode_response = build_episode_response(socket_tutor_core, episode)
                 await websocket.send_json(
                     {"type": "episode_topics", **episode_response.model_dump(mode="json")}
+                )
+                continue
+
+            if message_type == "load_saved_episode":
+                try:
+                    saved_episode_response = build_saved_episode_response(
+                        socket_tutor_core
+                    )
+                except ValueError as error:
+                    await websocket.send_json(
+                        {"type": "error", "message": str(error)}
+                    )
+                    continue
+
+                await websocket.send_json(
+                    {
+                        "type": "saved_episode_topics",
+                        **saved_episode_response.model_dump(mode="json"),
+                    }
                 )
                 continue
  

@@ -56,14 +56,14 @@ class Vocabulary:
 
         exists = getattr(doc, "exists", False)
         if not exists:
-            doc_ref.update({episode: episode})
+            doc_ref.set({"episode": episode})
             return
 
         current_max_completed_episode = self.get_max_episode_completed()
         if episode < current_max_completed_episode:
             return
 
-        doc_ref.update({episode: episode})
+        doc_ref.update({"episode": episode})
 
     # * Database operation
     def get_max_episode_completed(self) -> int:

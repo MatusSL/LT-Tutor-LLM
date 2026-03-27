@@ -4,21 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 export default function TabLayout() {
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         headerShown: false,
         tabBarInactiveTintColor: "#8A8A8C",
         tabBarActiveTintColor: "#0071E3",
       }}
     >
-      <Tabs.Screen
-        name="lectures"
-        options={{
-          title: "Lectures",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book" size={size} color={color} />
-          ),
-        }}
-      />
       <Tabs.Screen
         name="index"
         options={{
@@ -38,7 +30,6 @@ export default function TabLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
         name="review"
         options={{

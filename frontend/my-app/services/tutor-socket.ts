@@ -1,6 +1,6 @@
 import { getWebSocketUrl } from "@/constants/api";
 
-type Topic = {
+export type Topic = {
   display_name: string;
   description: string;
   suggested_goals: string[];
@@ -11,8 +11,15 @@ type Topics = {
   topics: Topic[];
 };
 
-type EpisodeTopicsResponse = {
+export type EpisodeTopicsResponse = {
   type: "episode_topics";
+  status: string;
+  episode: number;
+  topics: Topics;
+};
+
+export type SavedEpisodeTopicsResponse = {
+  type: "saved_episode_topics";
   status: string;
   episode: number;
   topics: Topics;
@@ -23,17 +30,23 @@ type ErrorResponse = {
   message: string;
 };
 
-type SocketResponse = EpisodeTopicsResponse | ErrorResponse;
+type SocketResponse =
+  | EpisodeTopicsResponse
+  | SavedEpisodeTopicsResponse
+  | ErrorResponse;
 
 const toErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown websocket error";
 
-export const requestEpisodeTopics = (episode: number) =>
-  new Promise<EpisodeTopicsResponse>((resolve, reject) => {
+const requestSocketResponse = <T extends SocketResponse>(
+  message: Record<string, unknown>,
+  expectedType: T["type"],
+) =>
+  new Promise<T>((resolve, reject) => {
     const socket = new WebSocket(getWebSocketUrl());
 
     socket.onopen = () => {
-      socket.send(JSON.stringify({ type: "set_episode", episode }));
+      socket.send(JSON.stringify(message));
     };
 
     socket.onmessage = (event) => {
@@ -46,7 +59,13 @@ export const requestEpisodeTopics = (episode: number) =>
           return;
         }
 
-        resolve(payload);
+        if (payload.type !== expectedType) {
+          reject(new Error(`Unexpected websocket response: ${payload.type}`));
+          socket.close();
+          return;
+        }
+
+        resolve(payload as T);
         socket.close();
       } catch (error) {
         reject(new Error(toErrorMessage(error)));
@@ -58,3 +77,15 @@ export const requestEpisodeTopics = (episode: number) =>
       reject(new Error("Could not connect to the tutor websocket."));
     };
   });
+
+export const requestEpisodeTopics = (episode: number) =>
+  requestSocketResponse<EpisodeTopicsResponse>(
+    { type: "set_episode", episode },
+    "episode_topics",
+  );
+
+export const requestSavedEpisodeTopics = () =>
+  requestSocketResponse<SavedEpisodeTopicsResponse>(
+    { type: "load_saved_episode" },
+    "saved_episode_topics",
+  );

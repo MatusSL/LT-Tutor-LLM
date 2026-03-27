@@ -1,21 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
+  Pressable,
   StatusBar,
-  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import { Ionicons } from "@expo/vector-icons";
+
 import { getWebSocketUrl } from "@/constants/api";
 
 type ErrorCandidate = {
@@ -41,6 +40,10 @@ type TutorResponse = {
   correction: Correction | null;
 };
 
+type Topic = {
+  display_name: string;
+};
+
 type Message =
   | {
       id: string;
@@ -52,8 +55,32 @@ type Message =
   | { id: string; type: "tutor"; tutor: TutorResponse; time: string }
   | { id: string; type: "loading" };
 
+type SetupStep = "options" | "selectEpisodes" | "chat";
+
+const EPISODE_COUNT = 90;
+
 const getTime = () =>
   new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+const buildIntroMessage = (topicNames: string[]): Message => ({
+  id: "0",
+  type: "tutor",
+  time: getTime(),
+  tutor: {
+    input_spanish: "",
+    input_english: "",
+    input_language: "english",
+    response_spanish:
+      topicNames.length > 0
+        ? `Temas sugeridos: ${topicNames.join(", ")}`
+        : "Hola, estoy listo para practicar contigo.",
+    response_english:
+      topicNames.length > 0
+        ? `Suggested topics based on your vocabulary: ${topicNames.join(", ")}`
+        : "Hi, I am ready to practice with you.",
+    correction: null,
+  },
+});
 
 const LangIcon = ({ color }: { color: string }) => (
   <Ionicons name="language" size={16} color={color} />
@@ -77,7 +104,7 @@ function UserBubble({ text, tutor }: { text: string; tutor?: TutorResponse }) {
           <Text style={styles.bubbleTextUser}>{text}</Text>
           {translationText && (
             <TouchableOpacity
-              onPress={() => setShowTranslation((v) => !v)}
+              onPress={() => setShowTranslation((value) => !value)}
               activeOpacity={0.6}
               style={[
                 styles.langIconBtn,
@@ -91,45 +118,42 @@ function UserBubble({ text, tutor }: { text: string; tutor?: TutorResponse }) {
           )}
         </View>
 
-        {/* Translation text inside bubble */}
-        {showTranslation && translationText && (
-          <View style={styles.inlineSeparator} />
-        )}
+        {showTranslation && translationText && <View style={styles.inlineSeparator} />}
         {showTranslation && translationText && (
           <Text style={styles.inlineTranslationUser}>{translationText}</Text>
         )}
 
-        {/* Correction toggle inside bubble */}
         {hasCorrection && (
           <TouchableOpacity
-            onPress={() => setShowCorrection((v) => !v)}
+            onPress={() => setShowCorrection((value) => !value)}
             activeOpacity={0.7}
             style={styles.correctionToggleBtn}
           >
             <Text style={styles.correctionToggleText}>
-              {showCorrection ? "Hide correction" : "✎ Show correction"}
+              {showCorrection ? "Hide correction" : "Show correction"}
             </Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Correction box — outside bubble, below */}
       {showCorrection && tutor?.correction && (
         <View style={styles.userCorrectionBox}>
           <Text style={styles.correctionLabel}>Corrected</Text>
-          <Text style={styles.correctionFixed}>
-            {tutor.correction.corrected}
-          </Text>
-          {tutor.correction.error_candidates.map((e, i) => (
-            <View key={i} style={styles.errorItem}>
+          <Text style={styles.correctionFixed}>{tutor.correction.corrected}</Text>
+          {tutor.correction.error_candidates.map((errorCandidate, index) => (
+            <View key={index} style={styles.errorItem}>
               <View style={styles.errorItemHeader}>
-                <Text style={styles.errorWord}>&quot;{e.word}&quot;</Text>
-                <Text style={styles.errorType}>{e.error_type}</Text>
+                <Text style={styles.errorWord}>
+                  &quot;{errorCandidate.word}&quot;
+                </Text>
+                <Text style={styles.errorType}>{errorCandidate.error_type}</Text>
               </View>
               <Text style={styles.errorSuggestion}>
-                → {e.suggested_correction}
+                {errorCandidate.suggested_correction}
               </Text>
-              <Text style={styles.errorExplanation}>{e.explanation}</Text>
+              <Text style={styles.errorExplanation}>
+                {errorCandidate.explanation}
+              </Text>
             </View>
           ))}
         </View>
@@ -147,7 +171,7 @@ function TutorBubble({ tutor }: { tutor: TutorResponse }) {
         <View style={styles.bubbleInnerRow}>
           <Text style={styles.bubbleTextTutor}>{tutor.response_spanish}</Text>
           <TouchableOpacity
-            onPress={() => setShowTranslation((v) => !v)}
+            onPress={() => setShowTranslation((value) => !value)}
             activeOpacity={0.6}
             style={[
               styles.langIconBtn,
@@ -158,7 +182,6 @@ function TutorBubble({ tutor }: { tutor: TutorResponse }) {
           </TouchableOpacity>
         </View>
 
-        {/* Translation text inside bubble */}
         {showTranslation && <View style={styles.inlineSeparator} />}
         {showTranslation && (
           <Text style={styles.inlineTranslationTutor}>
@@ -176,52 +199,169 @@ function LoadingBubble() {
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>T</Text>
       </View>
-      <View
-        style={[
-          styles.bubbleTutor,
-          { paddingHorizontal: 16, paddingVertical: 12 },
-        ]}
-      >
+      <View style={[styles.bubbleTutor, styles.loadingBubble]}>
         <ActivityIndicator size="small" color="#8E8E93" />
       </View>
     </View>
   );
 }
 
-export default function ChatScreen() {
-  const { topics, episode } = useLocalSearchParams<{
-    topics?: string;
-    episode?: string;
-  }>();
-  const topicList = topics ? JSON.parse(topics as string) : [];
-  const topicNames = topicList.map((t: any) => t.display_name);
+function SetupCard({
+  socketReady,
+  loading,
+  error,
+  onSkip,
+  onSelectEpisodes,
+}: {
+  socketReady: boolean;
+  loading: boolean;
+  error: string | null;
+  onSkip: () => void;
+  onSelectEpisodes: () => void;
+}) {
+  return (
+    <View style={styles.setupBody}>
+      <View style={styles.setupCard}>
+        <Text style={styles.setupEyebrow}>Chat Setup</Text>
+        <Text style={styles.setupTitle}>Start your practice session</Text>
+        <Text style={styles.setupText}>
+          Choose how we should build your vocabulary before the chat begins.
+        </Text>
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "0",
-      type: "tutor",
-      time: getTime(),
-      tutor: {
-        input_spanish: "",
-        input_english: "",
-        input_language: "english",
-        response_spanish: `Suggested topics based on vocabulary: ${topicNames.join(", ")}`,
-        response_english:
-          "Hi! I'm your Spanish tutor. What do you want to talk about today?",
-        correction: null,
-      },
-    },
-  ]);
+        <TouchableOpacity
+          style={[styles.primaryAction, (!socketReady || loading) && styles.actionDisabled]}
+          onPress={onSelectEpisodes}
+          disabled={!socketReady || loading}
+        >
+          <Text style={styles.primaryActionText}>Select completed episodes</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.secondaryAction, (!socketReady || loading) && styles.actionDisabled]}
+          onPress={onSkip}
+          disabled={!socketReady || loading}
+        >
+          <Text style={styles.secondaryActionText}>Skip</Text>
+        </TouchableOpacity>
+
+        {!socketReady && (
+          <Text style={styles.setupHint}>Connecting to tutor server...</Text>
+        )}
+        {loading && (
+          <View style={styles.setupLoadingRow}>
+            <ActivityIndicator size="small" color="#0071E3" />
+            <Text style={styles.setupHint}>Preparing your chat...</Text>
+          </View>
+        )}
+        {error && <Text style={styles.setupError}>{error}</Text>}
+      </View>
+    </View>
+  );
+}
+
+function EpisodeSelector({
+  selectedEpisode,
+  loading,
+  error,
+  onBack,
+  onConfirm,
+  onSelect,
+}: {
+  selectedEpisode: number;
+  loading: boolean;
+  error: string | null;
+  onBack: () => void;
+  onConfirm: () => void;
+  onSelect: (episode: number) => void;
+}) {
+  const episodes = Array.from({ length: EPISODE_COUNT }, (_, index) => index + 1);
+
+  return (
+    <View style={styles.selectorBody}>
+      <View style={styles.selectorHeader}>
+        <TouchableOpacity onPress={onBack} activeOpacity={0.7}>
+          <Text style={styles.backButton}>Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.selectorTitle}>Select completed episodes</Text>
+        <TouchableOpacity
+          onPress={onConfirm}
+          activeOpacity={0.7}
+          disabled={loading || selectedEpisode === 0}
+        >
+          <Text
+            style={[
+              styles.confirmButton,
+              (loading || selectedEpisode === 0) && styles.confirmButtonDisabled,
+            ]}
+          >
+            Continue
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.selectorSubtitle}>
+        Every episode up to your last completed one will be counted as done.
+      </Text>
+
+      {loading && (
+        <View style={styles.setupLoadingRow}>
+          <ActivityIndicator size="small" color="#0071E3" />
+          <Text style={styles.setupHint}>Building vocabulary...</Text>
+        </View>
+      )}
+      {error && <Text style={styles.setupError}>{error}</Text>}
+
+      <FlatList
+        data={episodes}
+        keyExtractor={(item) => item.toString()}
+        contentContainerStyle={styles.selectorList}
+        renderItem={({ item }) => {
+          const isSelected = item <= selectedEpisode;
+
+          return (
+            <Pressable style={styles.row} onPress={() => onSelect(item)}>
+              <Text style={styles.rowText}>Episode {item}</Text>
+              <View
+                style={[
+                  styles.circle,
+                  isSelected ? styles.circleSelected : styles.circleUnselected,
+                ]}
+              />
+            </Pressable>
+          );
+        }}
+      />
+    </View>
+  );
+}
+
+export default function ChatScreen() {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [socketReady, setSocketReady] = useState(false);
+  const [setupStep, setSetupStep] = useState<SetupStep>("options");
+  const [setupError, setSetupError] = useState<string | null>(null);
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [selectedEpisode, setSelectedEpisode] = useState(0);
+  const [activeEpisode, setActiveEpisode] = useState<number | null>(null);
+
   const flatListRef = useRef<FlatList>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const pendingUserMessageIdRef = useRef<string | null>(null);
-  const initializedEpisodeRef = useRef(false);
+  const setupLoadingRef = useRef(false);
+  const setupStepRef = useRef<SetupStep>("options");
 
   const scrollToBottom = () =>
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+
+  useEffect(() => {
+    setupLoadingRef.current = setupLoading;
+  }, [setupLoading]);
+
+  useEffect(() => {
+    setupStepRef.current = setupStep;
+  }, [setupStep]);
 
   useEffect(() => {
     const socket = new WebSocket(getWebSocketUrl());
@@ -229,54 +369,67 @@ export default function ChatScreen() {
 
     socket.onopen = () => {
       setSocketReady(true);
-
-      if (episode && !initializedEpisodeRef.current) {
-        socket.send(
-          JSON.stringify({
-            type: "set_episode",
-            episode: Number(episode),
-          }),
-        );
-        initializedEpisodeRef.current = true;
-      }
+      setSetupError(null);
     };
 
     socket.onmessage = (event) => {
       const payload = JSON.parse(event.data);
 
+      if (
+        payload.type === "episode_topics" ||
+        payload.type === "saved_episode_topics"
+      ) {
+        const topics: Topic[] = payload.topics?.topics ?? [];
+        const topicNames = topics.map((topic) => topic.display_name);
+
+        setActiveEpisode(payload.episode);
+        setSelectedEpisode(payload.episode);
+        setMessages([buildIntroMessage(topicNames)]);
+        setSetupLoading(false);
+        setSetupError(null);
+        setSetupStep("chat");
+        return;
+      }
+
       if (payload.type === "chat_response") {
         const userMessageId = pendingUserMessageIdRef.current;
 
-        const tutorMsg: Message = {
+        const tutorMessage: Message = {
           id: (Date.now() + 1).toString(),
           type: "tutor",
           tutor: payload.data.tutor_response,
           time: getTime(),
         };
 
-        setMessages((prev) => {
-          const updated = prev
-            .filter((m) => m.id !== "loading")
-            .map((m) =>
-              m.id === userMessageId
-                ? { ...m, tutor: payload.data.tutor_response }
-                : m,
+        setMessages((previous) => {
+          const updated = previous
+            .filter((message) => message.id !== "loading")
+            .map((message) =>
+              message.id === userMessageId
+                ? { ...message, tutor: payload.data.tutor_response }
+                : message,
             );
 
-          return [...updated, tutorMsg];
+          return [...updated, tutorMessage];
         });
 
         pendingUserMessageIdRef.current = null;
-        setLoading(false);
+        setSendingMessage(false);
         scrollToBottom();
         return;
       }
 
       if (payload.type === "error") {
+        if (setupLoadingRef.current) {
+          setSetupLoading(false);
+          setSetupError(payload.message ?? "Could not prepare your chat.");
+          return;
+        }
+
         pendingUserMessageIdRef.current = null;
-        setLoading(false);
-        setMessages((prev) => [
-          ...prev.filter((m) => m.id !== "loading"),
+        setSendingMessage(false);
+        setMessages((previous) => [
+          ...previous.filter((message) => message.id !== "loading"),
           {
             id: (Date.now() + 1).toString(),
             type: "tutor",
@@ -299,6 +452,11 @@ export default function ChatScreen() {
 
     socket.onerror = () => {
       setSocketReady(false);
+
+      if (setupStepRef.current !== "chat") {
+        setSetupError("Could not connect to the tutor server.");
+        setSetupLoading(false);
+      }
     };
 
     socket.onclose = () => {
@@ -309,64 +467,97 @@ export default function ChatScreen() {
     return () => {
       socket.close();
     };
-  }, [episode]);
+  }, []);
 
-  const sendMessage = async () => {
+  const sendSocketMessage = (payload: Record<string, unknown>) => {
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      throw new Error("Socket is not connected.");
+    }
+
+    socketRef.current.send(JSON.stringify(payload));
+  };
+
+  const initializeChatFromSavedEpisode = () => {
+    setSetupError(null);
+    setSetupLoading(true);
+
+    try {
+      sendSocketMessage({ type: "load_saved_episode" });
+    } catch {
+      setSetupLoading(false);
+      setSetupError("Could not connect to the tutor server.");
+    }
+  };
+
+  const initializeChatFromSelection = () => {
+    if (selectedEpisode === 0) {
+      return;
+    }
+
+    setSetupError(null);
+    setSetupLoading(true);
+
+    try {
+      sendSocketMessage({ type: "set_episode", episode: selectedEpisode });
+    } catch {
+      setSetupLoading(false);
+      setSetupError("Could not connect to the tutor server.");
+    }
+  };
+
+  const sendMessage = () => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || sendingMessage || setupStep !== "chat") {
+      return;
+    }
+
     setInput("");
 
-    const userMsg: Message = {
+    const userMessage: Message = {
       id: Date.now().toString(),
       type: "user",
       text,
       time: getTime(),
     };
-    const loadingMsg: Message = { id: "loading", type: "loading" };
+    const loadingMessage: Message = { id: "loading", type: "loading" };
 
-    setMessages((prev) => [...prev, userMsg, loadingMsg]);
-    setLoading(true);
-    pendingUserMessageIdRef.current = userMsg.id;
+    setMessages((previous) => [...previous, userMessage, loadingMessage]);
+    setSendingMessage(true);
+    pendingUserMessageIdRef.current = userMessage.id;
     scrollToBottom();
 
     try {
-      if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-        throw new Error("Socket is not connected.");
-      }
-
-      socketRef.current.send(
-        JSON.stringify({
-          type: "chat",
-          user_sentence: text,
-        }),
-      );
+      sendSocketMessage({
+        type: "chat",
+        user_sentence: text,
+      });
     } catch {
       pendingUserMessageIdRef.current = null;
-      const errMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "tutor",
-        time: getTime(),
-        tutor: {
-          input_spanish: "",
-          input_english: "",
-          input_language: "unknown",
-          response_spanish:
-            "Lo siento, hubo un error. Por favor intenta de nuevo.",
-          response_english: "Sorry, there was an error. Please try again.",
-          correction: null,
+      setSendingMessage(false);
+      setMessages((previous) => [
+        ...previous.filter((message) => message.id !== "loading"),
+        {
+          id: (Date.now() + 1).toString(),
+          type: "tutor",
+          time: getTime(),
+          tutor: {
+            input_spanish: "",
+            input_english: "",
+            input_language: "unknown",
+            response_spanish:
+              "Lo siento, hubo un error. Por favor intenta de nuevo.",
+            response_english: "Sorry, there was an error. Please try again.",
+            correction: null,
+          },
         },
-      };
-      setMessages((prev) => [
-        ...prev.filter((m) => m.id !== "loading"),
-        errMsg,
       ]);
-      setLoading(false);
-      scrollToBottom();
     }
   };
 
   const renderItem = ({ item }: { item: Message }) => {
-    if (item.type === "loading") return <LoadingBubble />;
+    if (item.type === "loading") {
+      return <LoadingBubble />;
+    }
 
     if (item.type === "user") {
       return (
@@ -382,7 +573,7 @@ export default function ChatScreen() {
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>T</Text>
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={styles.tutorColumn}>
           <TutorBubble tutor={item.tutor} />
           <Text style={styles.timeTextTutor}>{item.time}</Text>
         </View>
@@ -400,282 +591,482 @@ export default function ChatScreen() {
         </View>
         <View>
           <Text style={styles.headerName}>LT Tutor</Text>
-          <Text style={styles.headerStatus}>Always here to help</Text>
+          <Text style={styles.headerStatus}>
+            {setupStep === "chat" && activeEpisode
+              ? `Episode ${activeEpisode} ready`
+              : "Always here to help"}
+          </Text>
         </View>
       </View>
       <View style={styles.divider} />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={90}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: false })
-          }
+      {setupStep === "options" && (
+        <SetupCard
+          socketReady={socketReady}
+          loading={setupLoading}
+          error={setupError}
+          onSkip={initializeChatFromSavedEpisode}
+          onSelectEpisodes={() => {
+            setSetupError(null);
+            setSetupStep("selectEpisodes");
+          }}
         />
+      )}
 
-        <View style={styles.inputBar}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              placeholder="Write in Spanish or English…"
-              placeholderTextColor="#C7C7CC"
-              multiline
-              maxLength={500}
-              editable={!loading}
-            />
+      {setupStep === "selectEpisodes" && (
+        <EpisodeSelector
+          selectedEpisode={selectedEpisode}
+          loading={setupLoading}
+          error={setupError}
+          onBack={() => {
+            setSetupError(null);
+            setSetupStep("options");
+          }}
+          onConfirm={initializeChatFromSelection}
+          onSelect={setSelectedEpisode}
+        />
+      )}
+
+      {setupStep === "chat" && (
+        <KeyboardAvoidingView
+          style={styles.chatBody}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={90}
+        >
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.messagesList}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: false })
+            }
+          />
+
+          <View style={styles.inputBar}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={input}
+                onChangeText={setInput}
+                placeholder="Write in Spanish or English..."
+                placeholderTextColor="#C7C7CC"
+                multiline
+                maxLength={500}
+                editable={!sendingMessage && socketReady}
+              />
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.sendBtn,
+                input.trim() && !sendingMessage && socketReady
+                  ? styles.sendBtnActive
+                  : styles.sendBtnInactive,
+              ]}
+              onPress={sendMessage}
+              disabled={!input.trim() || sendingMessage || !socketReady}
+            >
+              <Text style={styles.sendIcon}>↑</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={[
-              styles.sendBtn,
-              input.trim() && !loading && socketReady
-                ? styles.sendBtnActive
-                : styles.sendBtnInactive,
-            ]}
-            onPress={sendMessage}
-            disabled={!input.trim() || loading || !socketReady}
-          >
-            <Text style={styles.sendIcon}>↑</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#FFFFFF" },
-
+  safe: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 14,
     backgroundColor: "#FFFFFF",
-    gap: 12,
   },
   headerAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#0071E3",
     alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
-  headerAvatarText: { fontSize: 16, fontWeight: "600", color: "#FFFFFF" },
-  headerName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000000",
-    letterSpacing: -0.3,
-  },
-  headerStatus: { fontSize: 12, color: "#8E8E93" },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: "#C6C6C8" },
-
-  messagesList: {
-    paddingHorizontal: 12,
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 12,
-  },
-
-  messageRowUser: { alignItems: "flex-end", marginBottom: 2 },
-  userBubbleWrapper: { alignItems: "flex-end", gap: 5, maxWidth: "80%" },
-  bubbleUser: {
-    backgroundColor: "#007AFF",
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  bubbleTextUser: {
-    fontSize: 16,
+  headerAvatarText: {
     color: "#FFFFFF",
-    lineHeight: 21,
-    letterSpacing: -0.2,
-    flex: 1,
+    fontWeight: "700",
+    fontSize: 18,
   },
-  timeTextUser: {
-    fontSize: 11,
+  headerName: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1C1C1E",
+  },
+  headerStatus: {
+    fontSize: 13,
     color: "#8E8E93",
-    marginTop: 3,
-    marginRight: 4,
-  },
-
-  messageRowTutor: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-  },
-  avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
     marginTop: 2,
   },
-  avatarText: { fontSize: 13, fontWeight: "600", color: "#FFFFFF" },
-  tutorBubbleWrapper: { flex: 1, gap: 6 },
-  bubbleTutor: {
-    backgroundColor: "#F2F2F7",
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    alignSelf: "flex-start",
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#E5E5EA",
   },
-  bubbleTextTutor: {
+  setupBody: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  setupCard: {
+    borderRadius: 24,
+    padding: 24,
+    backgroundColor: "#F7F9FC",
+  },
+  setupEyebrow: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "#0071E3",
+    marginBottom: 10,
+  },
+  setupTitle: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "700",
+    color: "#1D1D1F",
+    marginBottom: 10,
+  },
+  setupText: {
     fontSize: 16,
-    color: "#000000",
-    lineHeight: 21,
-    letterSpacing: -0.2,
+    lineHeight: 24,
+    color: "#4B5563",
+    marginBottom: 24,
+  },
+  primaryAction: {
+    backgroundColor: "#0071E3",
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  primaryActionText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  secondaryAction: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  secondaryActionText: {
+    color: "#1D1D1F",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  actionDisabled: {
+    opacity: 0.5,
+  },
+  setupHint: {
+    marginTop: 16,
+    color: "#6B7280",
+    fontSize: 14,
+  },
+  setupError: {
+    marginTop: 14,
+    color: "#B42318",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  setupLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 16,
+  },
+  selectorBody: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+  },
+  selectorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  backButton: {
+    color: "#0071E3",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  selectorTitle: {
+    color: "#1D1D1F",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  confirmButton: {
+    color: "#0071E3",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  confirmButtonDisabled: {
+    color: "#A1A1AA",
+  },
+  selectorSubtitle: {
+    color: "#6B7280",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  selectorList: {
+    paddingBottom: 24,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderColor: "#EEEFF2",
+  },
+  rowText: {
+    fontSize: 16,
+    color: "#1D1D1F",
+  },
+  circle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+  },
+  circleUnselected: {
+    borderColor: "#9CA3AF",
+    backgroundColor: "transparent",
+  },
+  circleSelected: {
+    borderColor: "#0071E3",
+    backgroundColor: "#0071E3",
+  },
+  chatBody: {
     flex: 1,
   },
-  timeTextTutor: {
-    fontSize: 11,
-    color: "#8E8E93",
-    marginTop: 3,
-    marginLeft: 4,
+  messagesList: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
   },
-
+  messageRowUser: {
+    alignItems: "flex-end",
+  },
+  messageRowTutor: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    marginBottom: 4,
+  },
+  tutorColumn: {
+    flex: 1,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#E5F1FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+    marginBottom: 18,
+  },
+  avatarText: {
+    color: "#0071E3",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  tutorBubbleWrapper: {
+    maxWidth: "88%",
+  },
+  userBubbleWrapper: {
+    maxWidth: "88%",
+  },
+  bubbleTutor: {
+    backgroundColor: "#F2F2F7",
+    borderRadius: 22,
+    borderBottomLeftRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  bubbleUser: {
+    backgroundColor: "#0071E3",
+    borderRadius: 22,
+    borderBottomRightRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  loadingBubble: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   bubbleInnerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 8,
+  },
+  bubbleTextTutor: {
+    flex: 1,
+    color: "#1C1C1E",
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  bubbleTextUser: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 16,
+    lineHeight: 22,
   },
   langIconBtn: {
-    padding: 3,
-    borderRadius: 6,
-    marginTop: 2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+    marginTop: -1,
   },
   langIconBtnActive: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.16)",
   },
   langIconBtnActiveTutor: {
-    backgroundColor: "rgba(0,122,255,0.1)",
+    backgroundColor: "#E5EFFF",
   },
   inlineSeparator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    marginVertical: 7,
-  },
-  inlineTranslationUser: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.85)",
-    fontStyle: "italic",
-    lineHeight: 19,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    marginVertical: 8,
   },
   inlineTranslationTutor: {
+    color: "#6B7280",
     fontSize: 14,
-    color: "#636366",
-    fontStyle: "italic",
-    lineHeight: 19,
+    lineHeight: 20,
+  },
+  inlineTranslationUser: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 14,
+    lineHeight: 20,
   },
   correctionToggleBtn: {
-    marginTop: 6,
+    marginTop: 10,
     alignSelf: "flex-start",
   },
   correctionToggleText: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.75)",
-    fontWeight: "500",
+    color: "#DCEBFF",
+    fontSize: 13,
+    fontWeight: "600",
   },
-
   userCorrectionBox: {
-    backgroundColor: "#FFF9EC",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#FFD60A",
-    padding: 10,
-    gap: 4,
-    alignSelf: "stretch",
+    marginTop: 8,
+    backgroundColor: "#F7F9FC",
+    borderRadius: 18,
+    padding: 14,
   },
   correctionLabel: {
-    fontSize: 11,
-    color: "#8E8E93",
-    fontWeight: "500",
-    marginTop: 4,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    color: "#6B7280",
+    marginBottom: 6,
   },
-  correctionFixed: { fontSize: 14, color: "#34C759", fontWeight: "500" },
+  correctionFixed: {
+    fontSize: 16,
+    color: "#1D1D1F",
+    fontWeight: "600",
+    marginBottom: 10,
+  },
   errorItem: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#FFD60A",
-    paddingTop: 6,
-    gap: 2,
+    marginTop: 8,
   },
   errorItemHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    marginBottom: 2,
   },
-  errorWord: { fontSize: 13, fontWeight: "600", color: "#3C3C43" },
+  errorWord: {
+    color: "#111827",
+    fontWeight: "600",
+  },
   errorType: {
-    fontSize: 11,
-    color: "#FF9500",
-    backgroundColor: "#FFF3E0",
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
+    color: "#6B7280",
+    textTransform: "capitalize",
   },
-  errorSuggestion: { fontSize: 13, color: "#34C759", fontWeight: "500" },
-  errorExplanation: { fontSize: 12, color: "#636366", lineHeight: 17 },
-
+  errorSuggestion: {
+    color: "#0071E3",
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  errorExplanation: {
+    color: "#4B5563",
+    lineHeight: 20,
+  },
+  timeTextTutor: {
+    color: "#8E8E93",
+    fontSize: 11,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  timeTextUser: {
+    color: "#8E8E93",
+    fontSize: 11,
+    marginTop: 4,
+    marginRight: 4,
+  },
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    paddingBottom: Platform.OS === "ios" ? 8 : 12,
-    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === "ios" ? 24 : 14,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#C6C6C8",
-    gap: 8,
+    borderTopColor: "#E5E5EA",
+    backgroundColor: "#FFFFFF",
   },
   inputWrapper: {
     flex: 1,
     backgroundColor: "#F2F2F7",
     borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "#C6C6C8",
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    minHeight: 38,
-    justifyContent: "center",
+    paddingVertical: 10,
+    marginRight: 10,
+    maxHeight: 120,
   },
   input: {
     fontSize: 16,
-    color: "#000000",
-    letterSpacing: -0.2,
-    maxHeight: 100,
-    padding: 0,
-    margin: 0,
+    color: "#1C1C1E",
   },
   sendBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
-    marginBottom: 3,
+    justifyContent: "center",
   },
-  sendBtnActive: { backgroundColor: "#007AFF" },
-  sendBtnInactive: { backgroundColor: "#E5E5EA" },
+  sendBtnActive: {
+    backgroundColor: "#0071E3",
+  },
+  sendBtnInactive: {
+    backgroundColor: "#D1D5DB",
+  },
   sendIcon: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "700",
-    lineHeight: 18,
+    marginTop: -2,
   },
 });
