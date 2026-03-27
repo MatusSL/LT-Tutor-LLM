@@ -1,4 +1,3 @@
-from app.schemas.models import QWEN_MODEL
 from langchain_ollama import ChatOllama
 from app.agents.runner import Runner
 from langchain.agents import create_agent

@@ -9,6 +9,7 @@ from app.agents.runner import Runner
 from app.schemas.models import History, Language, TutorResponse
 from app.prompts.tutor_response_generator import TUTOR_RESPONSE_PROMPT
 
+
 class TutorResponseGenerator:
     def __init__(self, runner: Runner, model: ChatOllama) -> None:
         self.agent = create_agent(model=model)
@@ -75,7 +76,11 @@ class TutorResponseGenerator:
         input_spanish = str(payload.get("input_spanish", "")).strip().casefold()
         input_english = str(payload.get("input_english", "")).strip().casefold()
 
-        if user_sentence and user_sentence == input_english and user_sentence != input_spanish:
+        if (
+            user_sentence
+            and user_sentence == input_english
+            and user_sentence != input_spanish
+        ):
             return Language.ENGLISH
 
         return Language.SPANISH

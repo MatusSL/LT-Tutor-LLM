@@ -16,6 +16,7 @@ from app.services.vocabulary import Vocabulary
 
 # TODO: if not selected completed episodes build_tutor_code @param episode: int | None
 
+
 def resolve_episode_dir() -> Path:
     current = Path(__file__).resolve()
     while not (current / "LT_Episodes").exists():
@@ -27,32 +28,22 @@ def resolve_episode_dir() -> Path:
 
 def setup_tutor_service(runner: Runner) -> Tutor:
     tutor_model = ChatOllama(model=QWEN_MODEL, temperature=0.7)
-    return Tutor(
-        runner=runner,
-        model=tutor_model
-    )
+    return Tutor(runner=runner, model=tutor_model)
 
 
 def setup_topic_generator_service(runner: Runner) -> TopicGenerator:
     topic_generator_model = ChatOllama(model=QWEN_MODEL, temperature=0.8)
-    return TopicGenerator(
-        runner=runner,
-        model=topic_generator_model
-        )
+    return TopicGenerator(runner=runner, model=topic_generator_model)
+
 
 def setup_response_generator_service(runner: Runner) -> TutorResponseGenerator:
     tutor_response_generator_model = ChatOllama(model=QWEN_MODEL, temperature=0.2)
-    return TutorResponseGenerator(
-        runner=runner,
-        model=tutor_response_generator_model
-    )
+    return TutorResponseGenerator(runner=runner, model=tutor_response_generator_model)
+
 
 def setup_word_recommender_service(runner: Runner) -> WordRecommender:
     word_recommender_model = ChatOllama(model=QWEN_MODEL, temperature=0.15)
-    return WordRecommender(
-        runner=runner,
-        model=word_recommender_model
-    )
+    return WordRecommender(runner=runner, model=word_recommender_model)
 
 
 def build_tutor_core() -> TutorCore:

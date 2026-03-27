@@ -67,20 +67,14 @@ class TutorCore:
 
                 self.session_state.vocabulary.update(verified_new_words)
 
-        return ChatResponse(
-            response=reply,
-            tutor_response=response_json
-        )
+        return ChatResponse(response=reply, tutor_response=response_json)
 
     def analyize_response(self, tutor_response: TutorResponse) -> UserInputAnalysis:
         used_words = set(tutor_response.input_spanish.split())
         correction = tutor_response.correction
 
         if correction is None:
-            return UserInputAnalysis(
-                set_of_words=used_words,
-                misused_words=set()
-            )
+            return UserInputAnalysis(set_of_words=used_words, misused_words=set())
 
         misused_words: set[str] = set()
 
@@ -88,10 +82,7 @@ class TutorCore:
             candidate_word = error_candidate.word
             misused_words.add(candidate_word)
 
-        return UserInputAnalysis(
-            set_of_words=used_words,
-            misused_words=misused_words
-        )
+        return UserInputAnalysis(set_of_words=used_words, misused_words=misused_words)
 
     def get_explanations_from_analysis(self, response: TutorResponse) -> list[str]:
         correction = response.correction
@@ -108,13 +99,13 @@ class TutorCore:
 
     def get_chat_response_fallback(self):
         return ChatResponse(
-                response="Sorry, I couldn't understand that. Could you repeat it?",
-                tutor_response=TutorResponse(
-                    input_english="",
-                    input_spanish="",
-                    input_language=Language.UNKNOWN,
-                    response_spanish="",
-                    response_english="",
-                    correction=None
-                )
-            )
+            response="Sorry, I couldn't understand that. Could you repeat it?",
+            tutor_response=TutorResponse(
+                input_english="",
+                input_spanish="",
+                input_language=Language.UNKNOWN,
+                response_spanish="",
+                response_english="",
+                correction=None,
+            ),
+        )

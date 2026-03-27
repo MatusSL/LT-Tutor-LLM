@@ -16,7 +16,6 @@ class Runner:
         except Exception:
             return ""
 
-
     def extract_content(self, response: LLMResponse) -> str:
         last_message = response["messages"][-1]
 
