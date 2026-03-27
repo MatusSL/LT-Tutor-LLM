@@ -76,7 +76,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     {"type": "episode_topics", **episode_response.model_dump(mode="json")}
                 )
                 continue
-
+ 
             if message_type == "chat":
                 user_sentence = payload.get("user_sentence")
 

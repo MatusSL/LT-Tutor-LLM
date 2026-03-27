@@ -1,0 +1,22 @@
+# --------------------------
+# Backend (Python / Node / etc.)
+# --------------------------
+backend/__pycache__/
+backend/.env
+backend/node_modules/
+backend/dist/
+backend/build/
+
+# --------------------------
+# Frontend (React Native / Expo)
+# --------------------------
+frontend/my-app/node_modules/
+frontend/my-app/.expo/
+frontend/my-app/dist/
+frontend/my-app/build/
+frontend/my-app/.env
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
