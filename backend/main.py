@@ -55,7 +55,6 @@ async def transcribe_endpoint(audio: UploadFile = File(...)):
         os.unlink(tmp_path)
 
 
-
 class EpisodeRequest(BaseModel):
     episode: int
 

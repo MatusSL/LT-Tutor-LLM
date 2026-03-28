@@ -1,4 +1,5 @@
-const DEFAULT_API_URL = "http://158.195.204.108:8000";
+// const DEFAULT_API_URL = "http://158.195.204.108:8000";
+const DEFAULT_API_URL = "http://172.20.10.8:8000";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
