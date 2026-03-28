@@ -7,8 +7,13 @@ export default function TabLayout() {
       initialRouteName="index"
       screenOptions={{
         headerShown: false,
-        tabBarInactiveTintColor: "#8A8A8C",
-        tabBarActiveTintColor: "#0071E3",
+        tabBarStyle: {
+          backgroundColor: "#1A1A24",
+          borderTopColor: "rgba(255,255,255,0.07)",
+          borderTopWidth: 1,
+        },
+        tabBarInactiveTintColor: "#555566",
+        tabBarActiveTintColor: "#6C63FF",
       }}
     >
       <Tabs.Screen
@@ -20,7 +25,6 @@ export default function TabLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
         name="chat"
         options={{
@@ -36,6 +40,15 @@ export default function TabLayout() {
           title: "Review",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="checkmark-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="lectures"
+        options={{
+          title: "Lectures",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book" size={size} color={color} />
           ),
         }}
       />

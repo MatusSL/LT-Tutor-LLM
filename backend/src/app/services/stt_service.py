@@ -11,5 +11,5 @@ def _get_model() -> WhisperModel:
 
 
 def transcribe(audio_path: str) -> str:
-    segments, _ = _get_model().transcribe(audio_path)
+    segments, _ = _get_model().transcribe(audio_path, language="es")
     return " ".join(segment.text for segment in segments).strip()

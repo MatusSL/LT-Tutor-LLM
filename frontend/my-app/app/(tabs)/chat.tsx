@@ -14,7 +14,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import {
+  createAudioPlayer,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+  RecordingPresets,
+} from "expo-audio";
+import type { AudioPlayer } from "expo-audio";
 import { File as FSFile, Paths } from "expo-file-system";
 
 import {
@@ -24,6 +31,20 @@ import {
   sendChatMessage,
   transcribeAudio,
 } from "@/services/tutor-api";
+
+const C = {
+  bg: "#0F0F13",
+  surface: "#1A1A24",
+  surfaceAlt: "#22222F",
+  border: "rgba(255,255,255,0.07)",
+  accent: "#6C63FF",
+  accentSoft: "rgba(108,99,255,0.15)",
+  bubble: { out: "#6C63FF", outText: "#FFFFFF", in: "#22222F", inText: "#E8E8F0" },
+  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566" },
+  record: "#FF4B6E",
+  recordBg: "rgba(255,75,110,0.12)",
+  green: "#22C55E",
+};
 
 type ErrorCandidate = {
   word: string;
@@ -57,10 +78,9 @@ type Message =
       id: string;
       type: "user";
       text: string;
-      time: string;
       tutor?: TutorResponse;
     }
-  | { id: string; type: "tutor"; tutor: TutorResponse; time: string }
+  | { id: string; type: "tutor"; tutor: TutorResponse;}
   | { id: string; type: "loading" };
 
 type SetupStep = "options" | "selectEpisodes" | "chat";
@@ -73,7 +93,6 @@ const getTime = () =>
 const buildIntroMessage = (topicNames: string[]): Message => ({
   id: "0",
   type: "tutor",
-  time: getTime(),
   tutor: {
     input_spanish: "",
     input_english: "",
@@ -90,11 +109,57 @@ const buildIntroMessage = (topicNames: string[]): Message => ({
   },
 });
 
-const LangIcon = ({ color }: { color: string }) => (
-  <Ionicons name="language" size={16} color={color} />
-);
+function formatDuration(s: number) {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
 
-function UserBubble({ text, tutor }: { text: string; tutor?: TutorResponse }) {
+function LangIcon({ color }: { color: string }) {
+  return <Ionicons name="language" size={16} color={color} />;
+}
+
+function RecordingIndicator({
+  seconds,
+  onStop,
+  onCancel,
+}: {
+  seconds: number;
+  onStop: () => void;
+  onCancel: () => void;
+}) {
+  const [bars, setBars] = useState(
+    Array.from({ length: 22 }, () => 0.3 + Math.random() * 0.7),
+  );
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setBars(Array.from({ length: 22 }, () => 0.3 + Math.random() * 0.7));
+    }, 180);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <View style={styles.recordingBar}>
+      <TouchableOpacity onPress={onCancel} style={styles.recordCancelBtn}>
+        <Ionicons name="close" size={20} color={C.text.secondary} />
+      </TouchableOpacity>
+
+      <View style={styles.recordingWaveRow}>
+        <View style={styles.recordDot} />
+        {bars.map((h, i) => (
+          <View key={i} style={[styles.waveBar, { height: Math.max(6, h * 32) }]} />
+        ))}
+      </View>
+
+      <Text style={styles.recordTimer}>{formatDuration(seconds)}</Text>
+
+      <TouchableOpacity onPress={onStop} style={styles.recordStopBtn}>
+        <View style={styles.recordStopSquare} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function UserBubble({ text, tutor, onTranslate }: { text: string; tutor?: TutorResponse; onTranslate?: () => void }) {
   const [showCorrection, setShowCorrection] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
 
@@ -112,28 +177,31 @@ function UserBubble({ text, tutor }: { text: string; tutor?: TutorResponse }) {
           <Text style={styles.bubbleTextUser}>{text}</Text>
           {translationText && (
             <TouchableOpacity
-              onPress={() => setShowTranslation((value) => !value)}
+              onPress={() => {
+                const next = !showTranslation;
+                setShowTranslation(next);
+                if (next) onTranslate?.();
+              }}
               activeOpacity={0.6}
-              style={[
-                styles.langIconBtn,
-                showTranslation && styles.langIconBtnActive,
-              ]}
+              style={[styles.langIconBtn, showTranslation && styles.langIconBtnActiveUser]}
             >
               <LangIcon
-                color={showTranslation ? "#007AFF" : "rgba(255,255,255,0.7)"}
+                color={showTranslation ? "#FFFFFF" : "rgba(255,255,255,0.55)"}
               />
             </TouchableOpacity>
           )}
         </View>
 
-        {showTranslation && translationText && <View style={styles.inlineSeparator} />}
+        {showTranslation && translationText && (
+          <View style={styles.inlineSeparatorUser} />
+        )}
         {showTranslation && translationText && (
           <Text style={styles.inlineTranslationUser}>{translationText}</Text>
         )}
 
         {hasCorrection && (
           <TouchableOpacity
-            onPress={() => setShowCorrection((value) => !value)}
+            onPress={() => setShowCorrection((v) => !v)}
             activeOpacity={0.7}
             style={styles.correctionToggleBtn}
           >
@@ -148,20 +216,14 @@ function UserBubble({ text, tutor }: { text: string; tutor?: TutorResponse }) {
         <View style={styles.userCorrectionBox}>
           <Text style={styles.correctionLabel}>Corrected</Text>
           <Text style={styles.correctionFixed}>{tutor.correction.corrected}</Text>
-          {tutor.correction.error_candidates.map((errorCandidate, index) => (
+          {tutor.correction.error_candidates.map((ec, index) => (
             <View key={index} style={styles.errorItem}>
               <View style={styles.errorItemHeader}>
-                <Text style={styles.errorWord}>
-                  &quot;{errorCandidate.word}&quot;
-                </Text>
-                <Text style={styles.errorType}>{errorCandidate.error_type}</Text>
+                <Text style={styles.errorWord}>&quot;{ec.word}&quot;</Text>
+                <Text style={styles.errorType}>{ec.error_type}</Text>
               </View>
-              <Text style={styles.errorSuggestion}>
-                {errorCandidate.suggested_correction}
-              </Text>
-              <Text style={styles.errorExplanation}>
-                {errorCandidate.explanation}
-              </Text>
+              <Text style={styles.errorSuggestion}>{ec.suggested_correction}</Text>
+              <Text style={styles.errorExplanation}>{ec.explanation}</Text>
             </View>
           ))}
         </View>
@@ -170,7 +232,7 @@ function UserBubble({ text, tutor }: { text: string; tutor?: TutorResponse }) {
   );
 }
 
-function TutorBubble({ tutor }: { tutor: TutorResponse }) {
+function TutorBubble({ tutor, onTranslate }: { tutor: TutorResponse; onTranslate?: () => void }) {
   const [showTranslation, setShowTranslation] = useState(false);
 
   return (
@@ -179,22 +241,21 @@ function TutorBubble({ tutor }: { tutor: TutorResponse }) {
         <View style={styles.bubbleInnerRow}>
           <Text style={styles.bubbleTextTutor}>{tutor.response_spanish}</Text>
           <TouchableOpacity
-            onPress={() => setShowTranslation((value) => !value)}
+            onPress={() => {
+              const next = !showTranslation;
+              setShowTranslation(next);
+              if (next) onTranslate?.();
+            }}
             activeOpacity={0.6}
-            style={[
-              styles.langIconBtn,
-              showTranslation && styles.langIconBtnActiveTutor,
-            ]}
+            style={[styles.langIconBtn, showTranslation && styles.langIconBtnActiveTutor]}
           >
-            <LangIcon color={showTranslation ? "#007AFF" : "#8E8E93"} />
+            <LangIcon color={showTranslation ? C.accent : C.text.secondary} />
           </TouchableOpacity>
         </View>
 
-        {showTranslation && <View style={styles.inlineSeparator} />}
+        {showTranslation && <View style={styles.inlineSeparatorTutor} />}
         {showTranslation && (
-          <Text style={styles.inlineTranslationTutor}>
-            {tutor.response_english}
-          </Text>
+          <Text style={styles.inlineTranslationTutor}>{tutor.response_english}</Text>
         )}
       </View>
     </View>
@@ -208,7 +269,7 @@ function LoadingBubble() {
         <Text style={styles.avatarText}>T</Text>
       </View>
       <View style={[styles.bubbleTutor, styles.loadingBubble]}>
-        <ActivityIndicator size="small" color="#8E8E93" />
+        <ActivityIndicator size="small" color={C.text.secondary} />
       </View>
     </View>
   );
@@ -257,7 +318,7 @@ function SetupCard({
         )}
         {loading && (
           <View style={styles.setupLoadingRow}>
-            <ActivityIndicator size="small" color="#0071E3" />
+            <ActivityIndicator size="small" color={C.accent} />
             <Text style={styles.setupHint}>Preparing your chat...</Text>
           </View>
         )}
@@ -282,7 +343,7 @@ function EpisodeSelector({
   onConfirm: () => void;
   onSelect: (episode: number) => void;
 }) {
-  const episodes = Array.from({ length: EPISODE_COUNT }, (_, index) => index + 1);
+  const episodes = Array.from({ length: EPISODE_COUNT }, (_, i) => i + 1);
 
   return (
     <View style={styles.selectorBody}>
@@ -313,7 +374,7 @@ function EpisodeSelector({
 
       {loading && (
         <View style={styles.setupLoadingRow}>
-          <ActivityIndicator size="small" color="#0071E3" />
+          <ActivityIndicator size="small" color={C.accent} />
           <Text style={styles.setupHint}>Building vocabulary...</Text>
         </View>
       )}
@@ -325,7 +386,6 @@ function EpisodeSelector({
         contentContainerStyle={styles.selectorList}
         renderItem={({ item }) => {
           const isSelected = item <= selectedEpisode;
-
           return (
             <Pressable style={styles.row} onPress={() => onSelect(item)}>
               <Text style={styles.rowText}>Episode {item}</Text>
@@ -350,63 +410,79 @@ export default function ChatScreen() {
   const [serverReady, setServerReady] = useState(false);
   const [setupStep, setSetupStep] = useState<SetupStep>("options");
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const [inputActive, setInputActive] = useState(false);
+  const inputRef = useRef<import("react-native").TextInput>(null);
   const [setupLoading, setSetupLoading] = useState(false);
   const [selectedEpisode, setSelectedEpisode] = useState(0);
   const [activeEpisode, setActiveEpisode] = useState<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [recordSecs, setRecordSecs] = useState(0);
 
   const flatListRef = useRef<FlatList>(null);
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const playerRef = useRef<AudioPlayer | null>(null);
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   const scrollToBottom = () =>
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
   const playResponseAudio = async (base64Audio: string) => {
     try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
       const binaryStr = atob(base64Audio);
       const bytes = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) {
         bytes[i] = binaryStr.charCodeAt(i);
       }
+
+      if (Platform.OS === "web") {
+        const blob = new Blob([bytes], { type: "audio/mpeg" });
+        const url = URL.createObjectURL(blob);
+        const audio = new window.Audio(url);
+        audio.onended = () => URL.revokeObjectURL(url);
+        await audio.play();
+        return;
+      }
+
+      if (playerRef.current) {
+        playerRef.current.remove();
+        playerRef.current = null;
+      }
       const audioFile = new FSFile(Paths.cache, "tutor_response.mp3");
       audioFile.write(bytes);
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-      const { sound } = await Audio.Sound.createAsync({ uri: audioFile.uri });
-      soundRef.current = sound;
-      await sound.playAsync();
+      await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: "doNotMix", allowsRecording: false, shouldPlayInBackground: false, shouldRouteThroughEarpiece: false });
+      const player = createAudioPlayer({ uri: audioFile.uri });
+      playerRef.current = player;
+      player.play();
     } catch {
       // Non-critical — silently ignore playback errors
     }
   };
 
   const startRecording = async () => {
-    const { status } = await Audio.requestPermissionsAsync();
+    const { status } = await requestRecordingPermissionsAsync();
     if (status !== "granted") return;
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-    });
-    const { recording } = await Audio.Recording.createAsync(
-      Audio.RecordingOptionsPresets.HIGH_QUALITY,
-    );
-    recordingRef.current = recording;
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true, interruptionMode: "doNotMix", shouldPlayInBackground: false, shouldRouteThroughEarpiece: false });
+    await recorder.prepareToRecordAsync();
+    recorder.record();
     setIsRecording(true);
+    setRecordSecs(0);
+    recordTimerRef.current = setInterval(() => setRecordSecs((s) => s + 1), 1000);
   };
 
   const stopRecording = async () => {
-    if (!recordingRef.current) return;
+    if (!recorder.isRecording) return;
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
     setIsRecording(false);
+    setRecordSecs(0);
     setIsTranscribing(true);
-    await recordingRef.current.stopAndUnloadAsync();
-    const uri = recordingRef.current.getURI();
-    recordingRef.current = null;
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    await recorder.stop();
+    const uri = recorder.uri;
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true, interruptionMode: "doNotMix", shouldPlayInBackground: false, shouldRouteThroughEarpiece: false });
     if (!uri) {
       setIsTranscribing(false);
       return;
@@ -420,6 +496,19 @@ export default function ChatScreen() {
     } catch {
       setIsTranscribing(false);
     }
+  };
+
+  const cancelRecording = async () => {
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+    if (recorder.isRecording) {
+      await recorder.stop();
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true, interruptionMode: "doNotMix", shouldPlayInBackground: false, shouldRouteThroughEarpiece: false });
+    }
+    setIsRecording(false);
+    setRecordSecs(0);
   };
 
   const toggleRecording = () => {
@@ -436,34 +525,28 @@ export default function ChatScreen() {
     const connect = async () => {
       try {
         const isHealthy = await checkTutorServer();
-
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setServerReady(isHealthy);
         setSetupError(isHealthy ? null : "Could not connect to the tutor server.");
       } catch {
-        if (!active) {
-          return;
-        }
-
+        if (!active) return;
         setServerReady(false);
         setSetupError("Could not connect to the tutor server.");
       }
     };
 
     void connect();
-
     return () => {
       active = false;
     };
   }, []);
 
-  const applyEpisodeTopics = (payload: { episode: number; topics?: { topics?: Topic[] } }) => {
+  const applyEpisodeTopics = (payload: {
+    episode: number;
+    topics?: { topics?: Topic[] };
+  }) => {
     const topics: Topic[] = payload.topics?.topics ?? [];
-    const topicNames = topics.map((topic) => topic.display_name);
-
+    const topicNames = topics.map((t) => t.display_name);
     setActiveEpisode(payload.episode);
     setSelectedEpisode(payload.episode);
     setMessages([buildIntroMessage(topicNames)]);
@@ -475,37 +558,28 @@ export default function ChatScreen() {
   const initializeChatFromSavedEpisode = async () => {
     setSetupError(null);
     setSetupLoading(true);
-
     try {
       const payload = await requestSavedEpisodeTopics();
       applyEpisodeTopics(payload);
     } catch (error) {
       setSetupLoading(false);
       setSetupError(
-        error instanceof Error
-          ? error.message
-          : "Could not connect to the tutor server.",
+        error instanceof Error ? error.message : "Could not connect to the tutor server.",
       );
     }
   };
 
   const initializeChatFromSelection = async () => {
-    if (selectedEpisode === 0) {
-      return;
-    }
-
+    if (selectedEpisode === 0) return;
     setSetupError(null);
     setSetupLoading(true);
-
     try {
       const payload = await requestEpisodeTopics(selectedEpisode);
       applyEpisodeTopics(payload);
     } catch (error) {
       setSetupLoading(false);
       setSetupError(
-        error instanceof Error
-          ? error.message
-          : "Could not connect to the tutor server.",
+        error instanceof Error ? error.message : "Could not connect to the tutor server.",
       );
     }
   };
@@ -517,31 +591,26 @@ export default function ChatScreen() {
       id: Date.now().toString(),
       type: "user",
       text,
-      time: getTime(),
     };
     const loadingMessage: Message = { id: "loading", type: "loading" };
 
-    setMessages((previous) => [...previous, userMessage, loadingMessage]);
+    setMessages((prev) => [...prev, userMessage, loadingMessage]);
     setSendingMessage(true);
     scrollToBottom();
 
     try {
       const payload = await sendChatMessage(text);
-
       const tutorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "tutor",
         tutor: payload.tutor_response,
-        time: getTime(),
       };
 
-      setMessages((previous) => {
-        const updated = previous
-          .filter((message) => message.id !== "loading")
-          .map((message) =>
-            message.id === userMessage.id
-              ? { ...message, tutor: payload.tutor_response }
-              : message,
+      setMessages((prev) => {
+        const updated = prev
+          .filter((m) => m.id !== "loading")
+          .map((m) =>
+            m.id === userMessage.id ? { ...m, tutor: payload.tutor_response } : m,
           );
         return [...updated, tutorMessage];
       });
@@ -554,18 +623,16 @@ export default function ChatScreen() {
       }
     } catch (error) {
       setSendingMessage(false);
-      setMessages((previous) => [
-        ...previous.filter((message) => message.id !== "loading"),
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== "loading"),
         {
           id: (Date.now() + 1).toString(),
           type: "tutor",
-          time: getTime(),
           tutor: {
             input_spanish: "",
             input_english: "",
             input_language: "unknown",
-            response_spanish:
-              "Lo siento, hubo un error. Por favor intenta de nuevo.",
+            response_spanish: "Lo siento, hubo un error. Por favor intenta de nuevo.",
             response_english:
               error instanceof Error
                 ? error.message
@@ -585,15 +652,12 @@ export default function ChatScreen() {
   };
 
   const renderItem = ({ item }: { item: Message }) => {
-    if (item.type === "loading") {
-      return <LoadingBubble />;
-    }
+    if (item.type === "loading") return <LoadingBubble />;
 
     if (item.type === "user") {
       return (
         <View style={styles.messageRowUser}>
-          <UserBubble text={item.text} tutor={item.tutor} />
-          <Text style={styles.timeTextUser}>{item.time}</Text>
+          <UserBubble text={item.text} tutor={item.tutor} onTranslate={scrollToBottom} />
         </View>
       );
     }
@@ -604,8 +668,7 @@ export default function ChatScreen() {
           <Text style={styles.avatarText}>T</Text>
         </View>
         <View style={styles.tutorColumn}>
-          <TutorBubble tutor={item.tutor} />
-          <Text style={styles.timeTextTutor}>{item.time}</Text>
+          <TutorBubble tutor={item.tutor} onTranslate={scrollToBottom} />
         </View>
       </View>
     );
@@ -613,18 +676,22 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerAvatar}>
-          <Text style={styles.headerAvatarText}>T</Text>
+        <View style={styles.avatarWrapper}>
+          <View style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>T</Text>
+          </View>
+          <View style={styles.onlineDot} />
         </View>
-        <View>
+        <View style={styles.headerInfo}>
           <Text style={styles.headerName}>LT Tutor</Text>
           <Text style={styles.headerStatus}>
             {setupStep === "chat" && activeEpisode
-              ? `Episode ${activeEpisode} ready`
-              : "Always here to help"}
+              ? `Episode ${activeEpisode} · active`
+              : "mActive now"}
           </Text>
         </View>
       </View>
@@ -675,52 +742,115 @@ export default function ChatScreen() {
             }
           />
 
-          <View style={styles.inputBar}>
-            <TouchableOpacity
-              style={[
-                styles.sendBtn,
-                input.trim() && !sendingMessage && serverReady
-                  ? styles.sendBtnActive
-                  : styles.sendBtnInactive,
-              ]}
-              onPress={sendMessage}
-              disabled={!input.trim() || sendingMessage || !serverReady}
-            >
-              <Text style={styles.sendIcon}>↑</Text>
-            </TouchableOpacity>
-            
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                value={input}
-                onChangeText={setInput}
-                placeholder="Write or speak in Spanish or English..."
-                placeholderTextColor="#C7C7CC"
-                multiline
-                maxLength={500}
-                editable={!sendingMessage && !isRecording && serverReady}
+          <View style={styles.inputArea}>
+            {isRecording && (
+              <RecordingIndicator
+                seconds={recordSecs}
+                onStop={() => void stopRecording()}
+                onCancel={() => void cancelRecording()}
               />
-             </View>
-      
-            <TouchableOpacity
-              style={[
-                styles.micBtn,
-                isRecording ? styles.micBtnActive : styles.micBtnInactive,
-              ]}
-              onPress={toggleRecording}
-              disabled={sendingMessage || isTranscribing || !serverReady}
-            >
-              {isTranscribing ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Ionicons
-                  name={isRecording ? "stop" : "mic"}
-                  size={20}
-                  color="#FFFFFF"
-                />
-              )}
-            </TouchableOpacity>
-            
+            )}
+
+            {!isRecording && showKeyboard && !inputActive && (
+              <View style={styles.voiceBar}>
+                {/* Mic toggle — returns to voice */}
+                <TouchableOpacity
+                  style={styles.keyboardToggleBtn}
+                  onPress={() => setShowKeyboard(false)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="mic" size={20} color={C.text.secondary} />
+                </TouchableOpacity>
+
+                {/* Tap-to-type pill */}
+                <TouchableOpacity
+                  style={styles.tapToTypeBtn}
+                  onPress={() => {
+                    setInputActive(true);
+                    setTimeout(() => inputRef.current?.focus(), 50);
+                  }}
+                  activeOpacity={0.7}
+                  disabled={sendingMessage || !serverReady}
+                >
+                  <Ionicons name="keypad-outline" size={16} color={C.text.hint} style={{ marginRight: 8 }} />
+                  <Text style={styles.tapToTypeText}>Tap to type…</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {!isRecording && showKeyboard && inputActive && (
+              <View style={styles.inputBar}>
+                {/* Mic toggle — left of text input */}
+                <TouchableOpacity
+                  style={styles.micToggleBtn}
+                  onPress={() => { setShowKeyboard(false); setInputActive(false); }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="mic" size={15} color={C.text.secondary} />
+                </TouchableOpacity>
+
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    ref={inputRef}
+                    style={styles.input}
+                    value={input}
+                    onChangeText={setInput}
+                    placeholder="Write in Spanish or English..."
+                    placeholderTextColor={C.text.hint}
+                    multiline
+                    maxLength={500}
+                    editable={!sendingMessage && serverReady}
+                    onBlur={() => { if (!input.trim()) setInputActive(false); }}
+                  />
+                </View>
+
+                {input.trim() && (
+                  <TouchableOpacity
+                    style={[
+                      styles.actionBtn,
+                      !sendingMessage && serverReady
+                        ? styles.sendBtnActive
+                        : styles.actionBtnInactive,
+                    ]}
+                    onPress={() => void sendMessage()}
+                    disabled={sendingMessage || !serverReady}
+                  >
+                    <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {!isRecording && !showKeyboard && (
+              <View style={styles.voiceBar}>
+                {/* Keyboard toggle — left of mic */}
+                <TouchableOpacity
+                  style={styles.keyboardToggleBtn}
+                  onPress={() => setShowKeyboard(true)}
+                  activeOpacity={0.7}
+                  disabled={sendingMessage || !serverReady}
+                >
+                  <Ionicons name="keypad-outline" size={22} color={C.text.secondary} />
+                </TouchableOpacity>
+
+                {/* Centered mic button */}
+                <TouchableOpacity
+                  style={[
+                    styles.centerMicBtn,
+                    (!serverReady || isTranscribing) && styles.actionBtnInactive,
+                  ]}
+                  onPress={toggleRecording}
+                  disabled={sendingMessage || isTranscribing || !serverReady}
+                  activeOpacity={0.8}
+                >
+                  {isTranscribing ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="mic" size={28} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </KeyboardAvoidingView>
       )}
@@ -731,44 +861,65 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.bg,
   },
+
+  // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingTop: 10,
     paddingBottom: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: C.surface,
+    gap: 12,
+  },
+  avatarWrapper: {
+    position: "relative",
   },
   headerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#0071E3",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.accent,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
   },
   headerAvatarText: {
     color: "#FFFFFF",
     fontWeight: "700",
-    fontSize: 18,
+    fontSize: 17,
+  },
+  onlineDot: {
+    position: "absolute",
+    bottom: 1,
+    right: 1,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: C.green,
+    borderWidth: 2,
+    borderColor: C.surface,
+  },
+  headerInfo: {
+    flex: 1,
   },
   headerName: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#1C1C1E",
+    color: C.text.primary,
   },
   headerStatus: {
-    fontSize: 13,
-    color: "#8E8E93",
+    fontSize: 12,
+    color: C.green,
     marginTop: 2,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "#E5E5EA",
+    backgroundColor: C.border,
   },
+
+  // ── Setup ────────────────────────────────────────────────────────────────────
   setupBody: {
     flex: 1,
     justifyContent: "center",
@@ -778,33 +929,35 @@ const styles = StyleSheet.create({
   setupCard: {
     borderRadius: 24,
     padding: 24,
-    backgroundColor: "#F7F9FC",
+    backgroundColor: C.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
   setupEyebrow: {
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1,
     textTransform: "uppercase",
-    color: "#0071E3",
+    color: C.accent,
     marginBottom: 10,
   },
   setupTitle: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 32,
     fontWeight: "700",
-    color: "#1D1D1F",
+    color: C.text.primary,
     marginBottom: 10,
   },
   setupText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: "#4B5563",
+    fontSize: 15,
+    lineHeight: 22,
+    color: C.text.secondary,
     marginBottom: 24,
   },
   primaryAction: {
-    backgroundColor: "#0071E3",
+    backgroundColor: C.accent,
     borderRadius: 16,
-    paddingVertical: 16,
+    paddingVertical: 15,
     alignItems: "center",
     marginBottom: 12,
   },
@@ -815,27 +968,27 @@ const styles = StyleSheet.create({
   },
   secondaryAction: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: C.border,
     borderRadius: 16,
-    paddingVertical: 16,
+    paddingVertical: 15,
     alignItems: "center",
   },
   secondaryActionText: {
-    color: "#1D1D1F",
+    color: C.text.primary,
     fontSize: 16,
     fontWeight: "600",
   },
   actionDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   setupHint: {
     marginTop: 16,
-    color: "#6B7280",
+    color: C.text.secondary,
     fontSize: 14,
   },
   setupError: {
     marginTop: 14,
-    color: "#B42318",
+    color: "#FF6B6B",
     fontSize: 14,
     lineHeight: 20,
   },
@@ -845,6 +998,8 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 16,
   },
+
+  // ── Episode selector ─────────────────────────────────────────────────────────
   selectorBody: {
     flex: 1,
     paddingHorizontal: 20,
@@ -857,25 +1012,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backButton: {
-    color: "#0071E3",
+    color: C.accent,
     fontSize: 16,
     fontWeight: "600",
   },
   selectorTitle: {
-    color: "#1D1D1F",
-    fontSize: 18,
+    color: C.text.primary,
+    fontSize: 17,
     fontWeight: "700",
   },
   confirmButton: {
-    color: "#0071E3",
+    color: C.accent,
     fontSize: 16,
     fontWeight: "700",
   },
   confirmButtonDisabled: {
-    color: "#A1A1AA",
+    color: C.text.hint,
   },
   selectorSubtitle: {
-    color: "#6B7280",
+    color: C.text.secondary,
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 12,
@@ -888,12 +1043,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderColor: "#EEEFF2",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
   rowText: {
     fontSize: 16,
-    color: "#1D1D1F",
+    color: C.text.primary,
   },
   circle: {
     width: 22,
@@ -902,18 +1057,20 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   circleUnselected: {
-    borderColor: "#9CA3AF",
+    borderColor: C.text.hint,
     backgroundColor: "transparent",
   },
   circleSelected: {
-    borderColor: "#0071E3",
-    backgroundColor: "#0071E3",
+    borderColor: C.accent,
+    backgroundColor: C.accent,
   },
+
+  // ── Chat ──────────────────────────────────────────────────────────────────────
   chatBody: {
     flex: 1,
   },
   messagesList: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 16,
     gap: 12,
   },
@@ -929,20 +1086,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#E5F1FF",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: C.accentSoft,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 8,
     marginBottom: 18,
   },
   avatarText: {
-    color: "#0071E3",
+    color: C.accent,
     fontWeight: "700",
-    fontSize: 14,
+    fontSize: 13,
   },
+
+  // ── Bubbles ──────────────────────────────────────────────────────────────────
   tutorBubbleWrapper: {
     maxWidth: "88%",
   },
@@ -950,16 +1109,16 @@ const styles = StyleSheet.create({
     maxWidth: "88%",
   },
   bubbleTutor: {
-    backgroundColor: "#F2F2F7",
-    borderRadius: 22,
-    borderBottomLeftRadius: 8,
+    backgroundColor: C.bubble.in,
+    borderRadius: 18,
+    borderBottomLeftRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   bubbleUser: {
-    backgroundColor: "#0071E3",
-    borderRadius: 22,
-    borderBottomRightRadius: 8,
+    backgroundColor: C.bubble.out,
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
@@ -973,13 +1132,13 @@ const styles = StyleSheet.create({
   },
   bubbleTextTutor: {
     flex: 1,
-    color: "#1C1C1E",
+    color: C.bubble.inText,
     fontSize: 16,
     lineHeight: 22,
   },
   bubbleTextUser: {
-    flex: 1,
-    color: "#FFFFFF",
+    flexShrink: 1,
+    color: C.bubble.outText,
     fontSize: 16,
     lineHeight: 22,
   },
@@ -992,24 +1151,29 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     marginTop: -1,
   },
-  langIconBtnActive: {
+  langIconBtnActiveUser: {
     backgroundColor: "rgba(255,255,255,0.16)",
   },
   langIconBtnActiveTutor: {
-    backgroundColor: "#E5EFFF",
+    backgroundColor: C.accentSoft,
   },
-  inlineSeparator: {
+  inlineSeparatorUser: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    marginVertical: 8,
+  },
+  inlineSeparatorTutor: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: C.border,
     marginVertical: 8,
   },
   inlineTranslationTutor: {
-    color: "#6B7280",
+    color: C.text.secondary,
     fontSize: 14,
     lineHeight: 20,
   },
   inlineTranslationUser: {
-    color: "rgba(255,255,255,0.9)",
+    color: "rgba(255,255,255,0.8)",
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1018,26 +1182,29 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   correctionToggleText: {
-    color: "#DCEBFF",
+    color: "rgba(255,255,255,0.7)",
     fontSize: 13,
     fontWeight: "600",
   },
   userCorrectionBox: {
     marginTop: 8,
-    backgroundColor: "#F7F9FC",
-    borderRadius: 18,
+    backgroundColor: C.surfaceAlt,
+    borderRadius: 16,
     padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
   correctionLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
-    color: "#6B7280",
+    color: C.text.secondary,
     marginBottom: 6,
+    letterSpacing: 0.8,
   },
   correctionFixed: {
-    fontSize: 16,
-    color: "#1D1D1F",
+    fontSize: 15,
+    color: C.text.primary,
     fontWeight: "600",
     marginBottom: 10,
   },
@@ -1050,87 +1217,196 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   errorWord: {
-    color: "#111827",
+    color: C.text.primary,
     fontWeight: "600",
+    fontSize: 14,
   },
   errorType: {
-    color: "#6B7280",
+    color: C.text.secondary,
     textTransform: "capitalize",
+    fontSize: 13,
   },
   errorSuggestion: {
-    color: "#0071E3",
+    color: C.accent,
     fontWeight: "600",
     marginBottom: 2,
+    fontSize: 14,
   },
   errorExplanation: {
-    color: "#4B5563",
+    color: C.text.secondary,
     lineHeight: 20,
+    fontSize: 13,
   },
   timeTextTutor: {
-    color: "#8E8E93",
+    color: C.text.hint,
     fontSize: 11,
     marginTop: 4,
     marginLeft: 4,
   },
   timeTextUser: {
-    color: "#8E8E93",
+    color: C.text.hint,
     fontSize: 11,
     marginTop: 4,
     marginRight: 4,
   },
-  inputBar: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: Platform.OS === "ios" ? 24 : 14,
+
+  // ── Input area ───────────────────────────────────────────────────────────────
+  inputArea: {
+    backgroundColor: C.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#E5E5EA",
-    backgroundColor: "#FFFFFF",
-    gap: 8,
+    borderTopColor: C.border,
   },
-  micBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  // Voice-first bar (default)
+  voiceBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+    paddingTop: 14,
+    paddingBottom: Platform.OS === "ios" ? 30 : 18,
+  },
+  keyboardToggleBtn: {
+    position: "absolute",
+    left: 28,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.surfaceAlt,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
     alignItems: "center",
     justifyContent: "center",
   },
-  micBtnInactive: {
-    backgroundColor: "#8E8E93",
+  centerMicBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: C.accent,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  micBtnActive: {
-    backgroundColor: "#FF3B30",
+
+  tapToTypeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginLeft: 12,
+    backgroundColor: C.surfaceAlt,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  tapToTypeText: {
+    fontSize: 15,
+    color: C.text.hint,
+  },
+
+  // Keyboard bar
+  inputBar: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === "ios" ? 24 : 14,
+    gap: 8,
+  },
+  micToggleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: C.surfaceAlt,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginBottom: 2,
   },
   inputWrapper: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
+    backgroundColor: C.surfaceAlt,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 10,
     maxHeight: 120,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
   input: {
-    fontSize: 16,
-    color: "#1C1C1E",
+    fontSize: 15,
+    color: C.text.primary,
   },
-  sendBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  actionBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  actionBtnInactive: {
+    opacity: 0.4,
+  },
+  sendBtnActive: {
+    backgroundColor: C.accent,
+  },
+  micBtnInactive: {
+    backgroundColor: C.surfaceAlt,
+    borderWidth: 1,
+    borderColor: "rgba(255,75,110,0.35)",
+  },
+
+  // ── Recording indicator ──────────────────────────────────────────────────────
+  recordingBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 24 : 14,
+    gap: 10,
+  },
+  recordCancelBtn: {
+    padding: 4,
+  },
+  recordingWaveRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    height: 36,
+  },
+  recordDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.record,
+    marginRight: 6,
+  },
+  waveBar: {
+    width: 3,
+    borderRadius: 99,
+    backgroundColor: C.accent,
+    opacity: 0.8,
+  },
+  recordTimer: {
+    fontSize: 13,
+    color: C.text.secondary,
+    minWidth: 34,
+  },
+  recordStopBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.record,
     alignItems: "center",
     justifyContent: "center",
   },
-  sendBtnActive: {
-    backgroundColor: "#0071E3",
-  },
-  sendBtnInactive: {
-    backgroundColor: "#D1D5DB",
-  },
-  sendIcon: {
-    color: "#FFFFFF",
-    fontSize: 20,
-    fontWeight: "700",
-    marginTop: -2,
+  recordStopSquare: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    backgroundColor: "#FFFFFF",
   },
 });

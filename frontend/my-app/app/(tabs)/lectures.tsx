@@ -1,136 +1,167 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
   FlatList,
   Pressable,
   StyleSheet,
+  TouchableOpacity,
+  StatusBar,
   ListRenderItem,
 } from "react-native";
-
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-
-import { FontAwesome } from "@expo/vector-icons";
 import { requestEpisodeTopics } from "@/services/tutor-api";
 
-export default function Lectures() {
-  const [selectedLecture, setSelectedLecture] = useState<number>(0);
+const C = {
+  bg: "#0F0F13",
+  surface: "#1A1A24",
+  border: "rgba(255,255,255,0.07)",
+  accent: "#6C63FF",
+  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566" },
+};
 
-  const lectures: number[] = Array.from({ length: 90 }, (_, i) => i + 1);
+const EPISODE_COUNT = 90;
+
+export default function LecturesScreen() {
+  const [selectedLecture, setSelectedLecture] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const lectures = Array.from({ length: EPISODE_COUNT }, (_, i) => i + 1);
 
   const handlePress = (lecture: number) => {
-    if (lecture === selectedLecture) {
-      setSelectedLecture(0);
-    } else {
-      setSelectedLecture(lecture);
+    setSelectedLecture(lecture === selectedLecture ? 0 : lecture);
+  };
+
+  const handleConfirm = async () => {
+    if (selectedLecture === 0 || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await requestEpisodeTopics(selectedLecture);
+      router.push("/chat");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load episode topics.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const renderItem: ListRenderItem<number> = ({ item }) => {
     const isSelected = item <= selectedLecture;
-
     return (
       <Pressable style={styles.row} onPress={() => handlePress(item)}>
-        <Text style={styles.text}>Lecture {item}</Text>
-
-        <View
-          style={[
-            styles.circle,
-            isSelected ? styles.circleSelected : styles.circleUnselected,
-          ]}
-        />
+        <Text style={styles.rowText}>Episode {item}</Text>
+        <View style={[styles.circle, isSelected ? styles.circleSelected : styles.circleUnselected]} />
       </Pressable>
     );
   };
 
-  const sendSelectedEpisodes = async () => {
-    if (selectedLecture === 0) {
-      return;
-    }
-
-    try {
-      const data = await requestEpisodeTopics(selectedLecture);
-
-      router.push({
-        pathname: "/chat",
-        params: {
-          episode: selectedLecture.toString(),
-          topics: JSON.stringify(data.topics.topics),
-        },
-      });
-    } catch (error) {
-      console.error("Failed to send episodes:", error);
-    }
-  };
-
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.header_text}>Selected completed episodes</Text>
-        <Pressable
-          disabled={selectedLecture === 0}
-          onPress={sendSelectedEpisodes}
+        <Text style={styles.headerTitle}>Lectures</Text>
+        <TouchableOpacity
+          onPress={() => void handleConfirm()}
+          activeOpacity={0.7}
+          disabled={selectedLecture === 0 || loading}
         >
-          <FontAwesome name="check" size={18} color="#007AFF" />
-        </Pressable>
+          <Ionicons
+            name="checkmark"
+            size={22}
+            color={selectedLecture === 0 || loading ? C.text.hint : C.accent}
+          />
+        </TouchableOpacity>
       </View>
-      <FlatList<number>
+      <View style={styles.divider} />
+
+      <Text style={styles.subtitle}>
+        Mark the last episode you completed — all prior episodes count as done.
+      </Text>
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      <FlatList
         data={lectures}
-        renderItem={renderItem}
         keyExtractor={(item) => item.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    padding: 20,
-    color: "#8A8A8C",
+    backgroundColor: C.bg,
   },
-
-  header_text: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-
   header: {
-    // backgroundColor: "#8A8A8C",
-    display: "flex",
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginVertical: 16,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 14,
+    backgroundColor: C.surface,
   },
-
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: C.text.primary,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: C.border,
+  },
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: C.text.secondary,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 6,
+  },
+  errorText: {
+    color: "#FF6B6B",
+    fontSize: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderColor: "#eee",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
   },
-
-  text: {
+  rowText: {
     fontSize: 16,
+    color: C.text.primary,
   },
-
   circle: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
   },
-
   circleUnselected: {
-    borderColor: "#9CA3AF",
+    borderColor: C.text.hint,
     backgroundColor: "transparent",
   },
-
   circleSelected: {
-    borderColor: "#0071E3",
-    backgroundColor: "#0071E3",
+    borderColor: C.accent,
+    backgroundColor: C.accent,
   },
 });
