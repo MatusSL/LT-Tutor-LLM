@@ -682,7 +682,7 @@ export default function ChatScreen() {
       <View style={styles.header}>
         <View style={styles.avatarWrapper}>
           <View style={styles.headerAvatar}>
-            <Text style={styles.headerAvatarText}>T</Text>
+            <Text style={styles.headerAvatarText}>LT</Text>
           </View>
           <View style={styles.onlineDot} />
         </View>
@@ -691,7 +691,7 @@ export default function ChatScreen() {
           <Text style={styles.headerStatus}>
             {setupStep === "chat" && activeEpisode
               ? `Episode ${activeEpisode} · active`
-              : "mActive now"}
+              : "Active now"}
           </Text>
         </View>
       </View>
@@ -1252,9 +1252,12 @@ const styles = StyleSheet.create({
 
   // ── Input area ───────────────────────────────────────────────────────────────
   inputArea: {
+    height: 100,
     backgroundColor: C.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.border,
+    display: "flex",
+    justifyContent: "center",
   },
   // Voice-first bar (default)
   voiceBar: {
@@ -1289,7 +1292,7 @@ const styles = StyleSheet.create({
   tapToTypeBtn: {
     flexDirection: "row",
     alignItems: "center",
-    flex: 1,
+    width: "80%",
     marginLeft: 12,
     backgroundColor: C.surfaceAlt,
     borderRadius: 22,
@@ -1297,6 +1300,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
+    outline: "none",
   },
   tapToTypeText: {
     fontSize: 15,
@@ -1337,6 +1341,8 @@ const styles = StyleSheet.create({
   input: {
     fontSize: 15,
     color: C.text.primary,
+    outlineWidth: 0,
+
   },
   actionBtn: {
     width: 40,
