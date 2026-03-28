@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "my-app",
+    "name": "LT-Tutor",
     "slug": "my-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.myapp",
+      "bundleIdentifier": "com.lttutor.myapp",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
@@ -26,7 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.myapp"
+      "package": "com.lttutor.myapp"
     },
     "web": {
       "output": "static",
