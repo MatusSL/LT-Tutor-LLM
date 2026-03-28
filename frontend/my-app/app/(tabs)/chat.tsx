@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
   createAudioPlayer,
@@ -420,6 +421,9 @@ export default function ChatScreen() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordSecs, setRecordSecs] = useState(0);
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const insets = useSafeAreaInsets();
+
   const flatListRef = useRef<FlatList>(null);
   const playerRef = useRef<AudioPlayer | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -539,6 +543,12 @@ export default function ChatScreen() {
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardWillShow", () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener("keyboardWillHide", () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
   }, []);
 
   const applyEpisodeTopics = (payload: {
@@ -675,7 +685,7 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <StatusBar barStyle="light-content" />
 
       {/* Header */}
@@ -728,7 +738,7 @@ export default function ChatScreen() {
         <KeyboardAvoidingView
           style={styles.chatBody}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={90}
+          keyboardVerticalOffset={keyboardVisible ? 0 : 90}
         >
           <FlatList
             ref={flatListRef}
@@ -752,7 +762,7 @@ export default function ChatScreen() {
             )}
 
             {!isRecording && showKeyboard && !inputActive && (
-              <View style={styles.voiceBar}>
+              <View style={[styles.voiceBar, { paddingBottom: keyboardVisible ? 8 : insets.bottom + 10 }]}>
                 {/* Mic toggle — returns to voice */}
                 <TouchableOpacity
                   style={styles.keyboardToggleBtn}
@@ -779,7 +789,7 @@ export default function ChatScreen() {
             )}
 
             {!isRecording && showKeyboard && inputActive && (
-              <View style={styles.inputBar}>
+              <View style={[styles.inputBar, { paddingBottom: keyboardVisible ? 8 : insets.bottom + 8 }]}>
                 {/* Mic toggle — left of text input */}
                 <TouchableOpacity
                   style={styles.micToggleBtn}
@@ -822,7 +832,7 @@ export default function ChatScreen() {
             )}
 
             {!isRecording && !showKeyboard && (
-              <View style={styles.voiceBar}>
+              <View style={[styles.voiceBar, { paddingBottom: keyboardVisible ? 8 : insets.bottom + 10 }]}>
                 {/* Keyboard toggle — left of mic */}
                 <TouchableOpacity
                   style={styles.keyboardToggleBtn}
@@ -834,21 +844,26 @@ export default function ChatScreen() {
                 </TouchableOpacity>
 
                 {/* Centered mic button */}
-                <TouchableOpacity
-                  style={[
-                    styles.centerMicBtn,
-                    (!serverReady || isTranscribing) && styles.actionBtnInactive,
-                  ]}
-                  onPress={toggleRecording}
-                  disabled={sendingMessage || isTranscribing || !serverReady}
-                  activeOpacity={0.8}
-                >
-                  {isTranscribing ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Ionicons name="mic" size={28} color="#FFFFFF" />
-                  )}
-                </TouchableOpacity>
+                <View style={{ flex: 1, alignItems: "center" }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.centerMicBtn,
+                      (!serverReady || isTranscribing) && styles.actionBtnInactive,
+                    ]}
+                    onPress={toggleRecording}
+                    disabled={sendingMessage || isTranscribing || !serverReady}
+                    activeOpacity={0.8}
+                  >
+                    {isTranscribing ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Ionicons name="mic" size={28} color="#FFFFFF" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {/* Right spacer — mirrors left button for true centering */}
+                <View style={{ width: 40 }} />
               </View>
             )}
           </View>
@@ -1252,25 +1267,22 @@ const styles = StyleSheet.create({
 
   // ── Input area ───────────────────────────────────────────────────────────────
   inputArea: {
-    height: 100,
+    minHeight: 100,
     backgroundColor: C.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.border,
-    display: "flex",
     justifyContent: "center",
   },
   // Voice-first bar (default)
   voiceBar: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: Platform.OS === "ios" ? 30 : 18,
+    flex: 1,
+    justifyContent: "flex-start",
   },
   keyboardToggleBtn: {
-    position: "absolute",
-    left: 28,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -1279,6 +1291,7 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   centerMicBtn: {
     width: 56,
@@ -1292,8 +1305,8 @@ const styles = StyleSheet.create({
   tapToTypeBtn: {
     flexDirection: "row",
     alignItems: "center",
-    width: "80%",
-    marginLeft: 12,
+    flex: 1,
+    marginLeft: 10,
     backgroundColor: C.surfaceAlt,
     borderRadius: 22,
     paddingHorizontal: 16,
@@ -1310,11 +1323,12 @@ const styles = StyleSheet.create({
   // Keyboard bar
   inputBar: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingTop: 10,
-    paddingBottom: Platform.OS === "ios" ? 24 : 14,
     gap: 8,
+    flex: 1,
+    justifyContent: "flex-start",
   },
   micToggleBtn: {
     width: 36,
@@ -1326,7 +1340,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
-    marginBottom: 2,
   },
   inputWrapper: {
     flex: 1,
@@ -1337,6 +1350,7 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
+    
   },
   input: {
     fontSize: 15,
