@@ -101,11 +101,11 @@ const buildIntroMessage = (topicNames: string[]): Message => ({
     response_spanish:
       topicNames.length > 0
         ? `Temas sugeridos: ${topicNames.join(", ")}`
-        : "Hola, estoy listo para practicar contigo.",
+        : "Hola, ¿qué tal? ¿De qué quieres hablar hoy?",
     response_english:
       topicNames.length > 0
         ? `Suggested topics based on your vocabulary: ${topicNames.join(", ")}`
-        : "Hi, I am ready to practice with you.",
+        : "Hey, what's up? What do you want to talk about today?",
     correction: null,
   },
 });
