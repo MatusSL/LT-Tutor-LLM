@@ -3,7 +3,6 @@ from pathlib import Path
 from app.agents.tutor import Tutor
 from app.agents.topic_generator import TopicGenerator
 from app.agents.word_recommender import WordRecommender
-from app.agents.tutor_response_generator import TutorResponseGenerator
 
 from app.core.session_state import SessionState
 from app.core.session_manager import SessionManager
@@ -18,7 +17,6 @@ class TutorCore:
         self,
         tutor: Tutor,
         topic_generator: TopicGenerator,
-        tutor_response_generator: TutorResponseGenerator,
         word_recommender: WordRecommender,
         vocabulary: Vocabulary,
         episodes_dir: Path,
@@ -27,7 +25,6 @@ class TutorCore:
         self.vocabulary = vocabulary
         self.topic_generator = topic_generator
         self.word_recommender = word_recommender
-        self.tutor_response_generator = tutor_response_generator
         self.session_manager = SessionManager(episodes_dir)
         self.session_state = SessionState()
 
@@ -36,19 +33,14 @@ class TutorCore:
             # User didn't update completed episodes UI
             self.session_state.vocabulary = self.vocabulary.words
 
-        reply = self.tutor.reply(
+        reply, response_json = self.tutor.reply(
             user_input=user_input,
             history=self.session_state.history,
             vocabulary=self.session_state.vocabulary,
         )
 
         self.session_state.history.append({"role": "user", "content": user_input})
-        self.session_state.history.append({"role": "assistant", "content": reply})
-
-        current_turn = self.session_state.history[-2:]
-        response_json: TutorResponse = (
-            self.tutor_response_generator.generate_tutor_response_json(current_turn)
-        )
+        self.session_state.history.append({"role": "response", "content": reply})
 
         self.session_state.language = response_json.input_language
 

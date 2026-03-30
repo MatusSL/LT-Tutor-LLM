@@ -8,6 +8,14 @@ because three steps run sequentially:
   3. TTS via gTTS                       ~1-3s
 
 
+
+
+
+
+
+
+---------------------------------------------------------------- DONE ----------------------------------------------------------------
+
 IMPROVEMENT 1: Ollama JSON Mode
 --------------------------------
 Effort: 5 minutes | Impact: eliminates worst-case 40s scenarios
@@ -20,6 +28,14 @@ backend/src/app/core/build_tutor_core.py:40
 Forces Ollama to output valid JSON at the grammar level. The retry loop
 (tutor_response_generator.py:26-34) that fires up to 3x becomes a safety
 net that almost never triggers.
+
+
+
+
+
+
+
+
 
 
 IMPROVEMENT 2: Two-Phase Response (show reply instantly)
@@ -53,6 +69,14 @@ Frontend — chat.tsx sendMessageWithText:
      correction data, play audio
 
 
+
+
+
+
+
+
+
+
 IMPROVEMENT 3: Parallel TTS
 -----------------------------
 Effort: 15 minutes | Impact: saves 1-3s within the analyze call
@@ -67,6 +91,14 @@ Inside /chat/analyze, run TTS concurrently with the JSON analysis:
       audio = tts_future.result()
 
 Uses the raw reply text from history for TTS input.
+
+
+
+
+
+
+
+
 
 
 FILES TO MODIFY

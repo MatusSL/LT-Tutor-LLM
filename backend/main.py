@@ -30,6 +30,7 @@ class HealthResponse(BaseModel):
 def health_check():
     return HealthResponse(status="ok")
 
+tutor_core.handle_message(user_input="Hola, como estas?")
 
 @app.post("/chat", response_model=ChatResponse)
 def chat_endpoint(user_input: UserInput):

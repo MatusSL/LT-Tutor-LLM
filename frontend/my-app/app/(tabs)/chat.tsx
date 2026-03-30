@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -233,6 +234,44 @@ function UserBubble({ text, tutor, onTranslate }: { text: string; tutor?: TutorR
   );
 }
 
+function TypingAnimation() {
+  const anim1 = useRef(new Animated.Value(0)).current;
+  const anim2 = useRef(new Animated.Value(0)).current;
+  const anim3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim1, { toValue: 1, duration: 300, useNativeDriver: false }),
+        Animated.timing(anim2, { toValue: 1, duration: 300, useNativeDriver: false }),
+        Animated.timing(anim3, { toValue: 1, duration: 300, useNativeDriver: false }),
+        Animated.timing(anim1, { toValue: 0, duration: 300, useNativeDriver: false }),
+        Animated.timing(anim2, { toValue: 0, duration: 300, useNativeDriver: false }),
+        Animated.timing(anim3, { toValue: 0, duration: 300, useNativeDriver: false }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [anim1, anim2, anim3]);
+
+  const opacityInterpolation = (animValue: Animated.Value) =>
+    animValue.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
+
+  return (
+    <View style={styles.typingContainer}>
+      <Animated.Text style={[styles.typingDot, { opacity: opacityInterpolation(anim1) }]}>
+        •
+      </Animated.Text>
+      <Animated.Text style={[styles.typingDot, { opacity: opacityInterpolation(anim2) }]}>
+        •
+      </Animated.Text>
+      <Animated.Text style={[styles.typingDot, { opacity: opacityInterpolation(anim3) }]}>
+        •
+      </Animated.Text>
+    </View>
+  );
+}
+
 function TutorBubble({ tutor, onTranslate }: { tutor: TutorResponse; onTranslate?: () => void }) {
   const [showTranslation, setShowTranslation] = useState(false);
 
@@ -270,7 +309,7 @@ function LoadingBubble() {
         <Text style={styles.avatarText}>T</Text>
       </View>
       <View style={[styles.bubbleTutor, styles.loadingBubble]}>
-        <ActivityIndicator size="small" color={C.text.secondary} />
+        <TypingAnimation />
       </View>
     </View>
   );
@@ -1094,8 +1133,9 @@ const styles = StyleSheet.create({
   },
   messageRowTutor: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     marginBottom: 4,
+    marginTop: 4,
   },
   tutorColumn: {
     flex: 1,
@@ -1108,7 +1148,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 8,
-    marginBottom: 18,
+    marginTop: 2,
   },
   avatarText: {
     color: C.accent,
@@ -1140,6 +1180,18 @@ const styles = StyleSheet.create({
   loadingBubble: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  typingContainer: {
+    height: 20,
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+  },
+  typingDot: {
+    fontSize: 16,
+    color: C.text.secondary,
+    lineHeight: 22,
+    height: 22,
   },
   bubbleInnerRow: {
     flexDirection: "row",
