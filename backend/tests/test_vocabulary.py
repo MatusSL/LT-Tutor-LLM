@@ -10,6 +10,7 @@ def vocab():
     with patch("app.services.vocabulary.db") as mock_db:
         mock_db.collection.return_value.stream.return_value = []
         from app.services.vocabulary import Vocabulary
+
         v = Vocabulary()
         v.words = set()
         yield v

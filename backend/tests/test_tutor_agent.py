@@ -35,11 +35,11 @@ class TestExtractReplySection:
 
 class TestExtractJsonSection:
     def test_extracts_text_after_json_delimiter(self, tutor):
-        raw = "---REPLY---\nHola\n---JSON---\n{\"key\": 1}"
+        raw = '---REPLY---\nHola\n---JSON---\n{"key": 1}'
         assert tutor.extract_json_section(raw).strip() == '{"key": 1}'
 
     def test_returns_full_text_when_no_delimiter(self, tutor):
-        raw = "{\"key\": 1}"
+        raw = '{"key": 1}'
         assert tutor.extract_json_section(raw) == '{"key": 1}'
 
 
@@ -193,6 +193,7 @@ Pues, deberías decir 'estoy bien'.
   }
 }"""
 
+
 class TestParseMergedResponse:
     def test_parses_reply_without_correction(self, tutor):
         reply, resp = tutor.parse_merged_response(
@@ -227,7 +228,7 @@ class TestParseMergedResponse:
             tutor.parse_merged_response("no json here at all !!!!", "hola")
 
     def test_raises_when_json_section_missing_required_fields(self, tutor):
-        raw = "---REPLY---\nHola\n---JSON---\n{\"only_key\": \"value\"}"
+        raw = '---REPLY---\nHola\n---JSON---\n{"only_key": "value"}'
         with pytest.raises(Exception):
             tutor.parse_merged_response(raw, "hola")
 

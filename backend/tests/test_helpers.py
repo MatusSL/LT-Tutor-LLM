@@ -28,7 +28,6 @@ class TestRemovePunctuation:
         assert remove_punctuation("Hola! Como estas?") == "Hola Como estas"
 
 
-
 class TestTurnTextToLowercase:
     def test_lowercases_all_words(self):
         assert turn_text_to_lowercase("YO QUIERO") == "yo quiero"

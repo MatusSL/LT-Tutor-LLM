@@ -66,7 +66,6 @@ def core(tmp_path) -> TutorCore:
     )
 
 
-
 class TestAnalyizeResponse:
     def test_no_correction_returns_all_words_with_no_misused(self, core):
         resp = make_tutor_response(input_spanish="yo quiero ir")
@@ -94,11 +93,25 @@ class TestAnalyizeResponse:
     def test_multiple_error_candidates_all_added(self, core):
         correction = make_correction(
             errors=[
-                ErrorCandidate(word="una", span=[0, 3], error_type="agreement", suggested_correction="un", explanation=""),
-                ErrorCandidate(word="problema", span=[4, 12], error_type="vocabulary", suggested_correction="error", explanation=""),
+                ErrorCandidate(
+                    word="una",
+                    span=[0, 3],
+                    error_type="agreement",
+                    suggested_correction="un",
+                    explanation="",
+                ),
+                ErrorCandidate(
+                    word="problema",
+                    span=[4, 12],
+                    error_type="vocabulary",
+                    suggested_correction="error",
+                    explanation="",
+                ),
             ]
         )
-        resp = make_tutor_response(input_spanish="una problema grande", correction=correction)
+        resp = make_tutor_response(
+            input_spanish="una problema grande", correction=correction
+        )
         analysis = core.analyize_response(resp)
         assert analysis.misused_words == {"una", "problema"}
         assert "grande" in analysis.set_of_words
@@ -106,7 +119,7 @@ class TestAnalyizeResponse:
     def test_empty_input_spanish_returns_empty_sets(self, core):
         resp = make_tutor_response(input_spanish="")
         analysis = core.analyize_response(resp)
-        assert analysis.set_of_words == set()  
+        assert analysis.set_of_words == set()
         assert analysis.misused_words == set()
 
 
@@ -135,8 +148,20 @@ class TestGetExplanations:
     def test_multiple_explanations_all_returned(self, core):
         correction = make_correction(
             errors=[
-                ErrorCandidate(word="a", span=[0, 1], error_type="grammar", suggested_correction="b", explanation="Explanation A"),
-                ErrorCandidate(word="c", span=[2, 3], error_type="spelling", suggested_correction="d", explanation="Explanation B"),
+                ErrorCandidate(
+                    word="a",
+                    span=[0, 1],
+                    error_type="grammar",
+                    suggested_correction="b",
+                    explanation="Explanation A",
+                ),
+                ErrorCandidate(
+                    word="c",
+                    span=[2, 3],
+                    error_type="spelling",
+                    suggested_correction="d",
+                    explanation="Explanation B",
+                ),
             ]
         )
         resp = make_tutor_response(correction=correction)
@@ -172,7 +197,9 @@ class TestGetChatResponseFallback:
 
 
 class TestHandleMessage:
-    def _setup_tutor_reply(self, core, input_spanish, input_language=Language.SPANISH, correction=None):
+    def _setup_tutor_reply(
+        self, core, input_spanish, input_language=Language.SPANISH, correction=None
+    ):
         reply_text = "Ah, interesante!"
         tutor_response = make_tutor_response(
             input_spanish=input_spanish,
@@ -221,28 +248,50 @@ class TestHandleMessage:
     def test_vocabulary_skipped_when_multiple_errors(self, core):
         correction = make_correction(
             errors=[
-                ErrorCandidate(word="a", span=[0,1], error_type="grammar", suggested_correction="b", explanation=""),
-                ErrorCandidate(word="c", span=[2,3], error_type="grammar", suggested_correction="d", explanation=""),
+                ErrorCandidate(
+                    word="a",
+                    span=[0, 1],
+                    error_type="grammar",
+                    suggested_correction="b",
+                    explanation="",
+                ),
+                ErrorCandidate(
+                    word="c",
+                    span=[2, 3],
+                    error_type="grammar",
+                    suggested_correction="d",
+                    explanation="",
+                ),
             ]
         )
-        self._setup_tutor_reply(core, "mal input", Language.SPANISH, correction=correction)
+        self._setup_tutor_reply(
+            core, "mal input", Language.SPANISH, correction=correction
+        )
         core.handle_message("mal input")
         core.vocabulary.verify_and_update_vocabulary.assert_not_called()
 
     def test_vocabulary_updated_when_exactly_one_error(self, core):
         correction = make_correction(
             errors=[
-                ErrorCandidate(word="soy", span=[3,6], error_type="grammar", suggested_correction="estoy", explanation=""),
+                ErrorCandidate(
+                    word="soy",
+                    span=[3, 6],
+                    error_type="grammar",
+                    suggested_correction="estoy",
+                    explanation="",
+                ),
             ]
         )
-        self._setup_tutor_reply(core, "yo soy bien", Language.SPANISH, correction=correction)
+        self._setup_tutor_reply(
+            core, "yo soy bien", Language.SPANISH, correction=correction
+        )
         core.vocabulary.verify_and_update_vocabulary.return_value = set()
         core.handle_message("yo soy bien")
         core.vocabulary.verify_and_update_vocabulary.assert_called_once()
 
     def test_session_vocabulary_seeded_from_db_when_empty(self, core):
         core.vocabulary.words = {"base_word"}
-        core.session_state.vocabulary = set()  
+        core.session_state.vocabulary = set()
         self._setup_tutor_reply(core, "hola")
         core.handle_message("hola")
         assert "base_word" in core.session_state.vocabulary
