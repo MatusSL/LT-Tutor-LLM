@@ -1,37 +1,32 @@
 {
-    "id": 7,
-    "type": "mixed",
-    "unlocked_words": [
-        "quiero",
-        "continuar",
-        "continuarlo",
-        "intento",
-        "algo",
-        "te",
-        "voy",
-        "confiscarlo",
-        "examinarlo",
-        "los",
-        "verlos",
-        "intentar",
-        "pasar",
-        "visitarlos",
-        "visitarte",
-        "formal",
-        "formalmente",
-        "demostrar",
-        "mostrarte"
-    ],
-    "unlocked_structures": [
-        "quiero + infinitive",
-        "intento + infinitive",
-        "voy a + infinitive (near future)",
-        "verb + lo / los (object pronouns)",
-        "verb + te (indirect object pronoun)",
-        "verb of movement + a + infinitive"
-    ],
-    "unlocked_tenses": [
-        "present",
-        "near future"
-    ]
+  "id": 7,
+  "type": "structure",
+  "unlocked_words": [
+    "quiero",
+    "continuar",
+    "continuarlo",
+    "intención",
+    "intento",
+    "demostrar",
+    "mostrar",
+    "algo",
+    "te",
+    "mostrarte",
+    "voy",
+    "confiscarlo",
+    "examinarlo",
+    "los",
+    "verlos",
+    "intentar",
+    "pasar",
+    "visitarlo",
+    "visitarte",
+    "formalmente",
+    "demonstrar"
+  ],
+  "unlocked_structures": [],
+  "unlocked_tenses": [
+    "present",
+    "future"
+  ]
 }

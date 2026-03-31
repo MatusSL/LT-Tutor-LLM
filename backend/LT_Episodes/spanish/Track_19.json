@@ -1,41 +1,31 @@
 {
-    "id": 19,
-    "type": "mixed",
-    "unlocked_words": [
-        "siempre",
-        "bueno",
-        "va",
-        "vas",
-        "van",
-        "voy",
-        "ir",
-        "quiero",
-        "puedo",
-        "debo",
-        "tengo",
-        "que",
-        "ahora",
-        "esta",
-        "noche",
-        "la",
-        "carne",
-        "no",
-        "como",
-        "y",
-        "tomo",
-        "alcohol",
-        "a",
-        "dónde"
-    ],
-    "unlocked_structures": [
-        "ir (to go) with irregular present forms",
-        "quiero / puedo / debo / tengo que + infinitive",
-        "negation with no",
-        "a + dónde (movement question)",
-        "noun gender with feminine articles (la noche, la carne)",
-        "coordination with y"
-    ],
-    "unlocked_tenses": [
-        "present"
-    ]
+  "id": 19,
+  "type": "structure",
+  "unlocked_words": [
+    "siempre",
+    "bueno",
+    "va",
+    "vas",
+    "dónde",
+    "van",
+    "voy",
+    "quiero",
+    "ir",
+    "puedo",
+    "debo",
+    "tengo",
+    "que",
+    "ahora",
+    "esta",
+    "noche",
+    "la",
+    "carne",
+    "como",
+    "tomo",
+    "alcohol"
+  ],
+  "unlocked_structures": [],
+  "unlocked_tenses": [
+    "present"
+  ]
 }

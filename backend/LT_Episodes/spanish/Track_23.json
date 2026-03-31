@@ -1,45 +1,31 @@
 {
-    "id": 23,
-    "type": "mixed",
-    "unlocked_words": [
-        "haber",
-        "he",
-        "hemos",
-        "ha",
-        "has",
-        "han",
-        "problema",
-        "sistema",
-        "programa",
-        "aroma",
-        "panorama",
-        "clima",
-        "comprender",
-        "entender",
-        "sentir",
-        "sentido",
-        "perder",
-        "perdido",
-        "yo",
-        "tú",
-        "él",
-        "ella",
-        "nosotros",
-        "nosotras",
-        "me",
-        "te",
-        "nos"
-    ],
-    "unlocked_structures": [
-        "present perfect with haber + past participle",
-        "masculine nouns ending in -ma (el problema, el sistema)",
-        "reflexive use for 'get lost' (perderse)",
-        "object/reflexive pronoun before haber (me he perdido, nos hemos perdido)",
-        "emphatic subject pronouns (yo, tú, nosotros)",
-        "formal vs informal address in present perfect"
-    ],
-    "unlocked_tenses": [
-        "present",
-        "present perfect"
-    ]
+  "id": 23,
+  "type": "structure",
+  "unlocked_words": [
+    "hemos",
+    "ha",
+    "han",
+    "el",
+    "problema",
+    "comprender",
+    "entendido",
+    "sistema",
+    "sentido",
+    "aroma",
+    "programa",
+    "perdir",
+    "perder",
+    "perdido",
+    "yo",
+    "tú",
+    "te",
+    "lo",
+    "nos",
+    "nosotros"
+  ],
+  "unlocked_structures": [],
+  "unlocked_tenses": [
+    "present",
+    "present perfect"
+  ]
 }

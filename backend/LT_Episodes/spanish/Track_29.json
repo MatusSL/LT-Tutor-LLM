@@ -1,35 +1,26 @@
 {
-    "id": 29,
-    "type": "structure",
-    "unlocked_words": [
-        "ser",
-        "estar",
-        "ser humano",
-        "humano",
-        "humanidad",
-        "estado",
-        "estoy",
-        "está",
-        "están",
-        "estás",
-        "estamos",
-        "cansado",
-        "cansada",
-        "cansados",
-        "cansadas",
-        "siempre",
-        "muerto",
-        "muerta"
-    ],
-    "unlocked_structures": [
-        "conceptual distinction between ser (characteristics) and estar (states)",
-        "use of estar for physical and emotional states",
-        "gender and number agreement with adjectives used with estar",
-        "placement flexibility of adverbs like siempre",
-        "estar as an irregular present-tense verb with stress on final syllable",
-        "use of estar + adjective to express condition (estoy cansado, estoy muerto)"
-    ],
-    "unlocked_tenses": [
-        "present"
-    ]
+  "id": 29,
+  "type": "structure",
+  "unlocked_words": [
+    "human",
+    "humanidad",
+    "state",
+    "aggressive",
+    "permanent",
+    "estoy",
+    "está",
+    "están",
+    "estás",
+    "estamos",
+    "cansado",
+    "cansada",
+    "cansados",
+    "cansadas",
+    "siempre",
+    "muerta"
+  ],
+  "unlocked_structures": [],
+  "unlocked_tenses": [
+    "present"
+  ]
 }

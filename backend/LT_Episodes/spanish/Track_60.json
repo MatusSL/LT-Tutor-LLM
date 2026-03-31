@@ -1,0 +1,42 @@
+{
+  "id": 60,
+  "type": "vocabulary",
+  "unlocked_words": [
+    "hablar",
+    "hablé",
+    "habló",
+    "cuando",
+    "comprender",
+    "hablamos",
+    "comprendo",
+    "todo",
+    "comprendí",
+    "ayer",
+    "mañana",
+    "mucho",
+    "esperar",
+    "esperamos",
+    "comemos",
+    "comimos",
+    "vivir",
+    "vivimos",
+    "ver",
+    "vemos",
+    "vimos",
+    "salimos",
+    "perder",
+    "perdemos",
+    "perdimos",
+    "nos",
+    "siempre",
+    "pero",
+    "menudo",
+    "comí",
+    "comió"
+  ],
+  "unlocked_structures": [],
+  "unlocked_tenses": [
+    "present",
+    "future"
+  ]
+}

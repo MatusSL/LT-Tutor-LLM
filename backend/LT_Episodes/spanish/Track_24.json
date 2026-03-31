@@ -1,38 +1,31 @@
 {
-    "id": 24,
-    "type": "mixed",
-    "unlocked_words": [
-        "dar",
-        "doy",
-        "da",
-        "dan",
-        "das",
-        "algo",
-        "mañana",
-        "él",
-        "ella",
-        "ellos",
-        "ellas",
-        "tú",
-        "usted",
-        "ustedes",
-        "me",
-        "te",
-        "nos",
-        "lo",
-        "los",
-        "las"
-    ],
-    "unlocked_structures": [
-        "irregular present of dar (doy, da, dan, das)",
-        "double object pronouns (me lo, te lo, nos lo)",
-        "order of object pronouns (person before thing)",
-        "future meaning expressed with present + time context",
-        "formal vs informal address (tú vs usted / ustedes)",
-        "emphatic subject pronouns with flexible position",
-        "infinitive construction after querer (quiero dar)"
-    ],
-    "unlocked_tenses": [
-        "present"
-    ]
+  "id": 24,
+  "type": "structure",
+  "unlocked_words": [
+    "dar",
+    "doy",
+    "lo",
+    "los",
+    "las",
+    "da",
+    "él",
+    "ella",
+    "ellos",
+    "dan",
+    "das",
+    "algo",
+    "te",
+    "mañana",
+    "usted",
+    "end",
+    "ustedes",
+    "nos",
+    "quiero"
+  ],
+  "unlocked_structures": [],
+  "unlocked_tenses": [
+    "present",
+    "future",
+    "present perfect"
+  ]
 }

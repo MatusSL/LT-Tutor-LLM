@@ -1,7 +1,9 @@
 {
-    "id": 1,
-    "type": "orientation",
-    "unlocked_words" : [],
-    "unlocked_structures": [],
-    "unlocked_tenses": []
+  "id": 1,
+  "type": "orientation",
+  "unlocked_words": [],
+  "unlocked_structures": [],
+  "unlocked_tenses": [
+    "present"
+  ]
 }
