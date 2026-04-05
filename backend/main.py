@@ -34,7 +34,7 @@ def chat_endpoint(user_input: UserInput):
     result = tutor_core.handle_message(user_input=user_input.user_sentence)
     print(f"\nCHAT RESPONSE: --------{result}\n")
     if result.tutor_response.response_spanish:
-        result.response_audio = tts_service.text_to_speech_base64(
+        result.response_audio = tts_service.text_to_speech(
             result.tutor_response.response_spanish
         )
     return result
@@ -60,7 +60,6 @@ def load_episode_vocabulary_into_session(active_tutor_core, episode: int) -> Non
     active_tutor_core.session_state.vocabulary = unlocked_words
     active_tutor_core.vocabulary.insert_all_words(unlocked_words)
 
-load_episode_vocabulary_into_session(tutor_core, 34)
 
 def build_episode_response(active_tutor_core, episode: int) -> EpisodeResponse:
     load_episode_vocabulary_into_session(active_tutor_core, episode)
