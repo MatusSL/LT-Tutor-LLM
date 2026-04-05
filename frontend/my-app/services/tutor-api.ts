@@ -28,6 +28,10 @@ type ErrorPayload = {
   message?: string;
 };
 
+export type CurrentEpisode = {
+  episode: number
+}
+
 export type TutorApiChatResponse = {
   response: string;
   tutor_response: {
@@ -94,6 +98,11 @@ export const requestSavedEpisodeTopics = () =>
   requestJson<SavedEpisodeTopicsResponse>("/episode/saved", {
     method: "GET",
   });
+
+export const requestCurrentEpisode = () => 
+  requestJson<CurrentEpisode>("/episode/current", {
+    method: "GET"
+  })
 
 export const sendChatMessage = (userSentence: string) =>
   requestJson<TutorApiChatResponse>("/chat", {

@@ -10,8 +10,14 @@ from app.agents.word_recommender import WordRecommender
 
 from app.core.tutor_core import TutorCore
 
-from app.schemas.models import QWEN25_7B_MODEL, QWEN25_14B_MODEL
+from app.schemas.models import QWEN25_7B_MODEL
 from app.services.vocabulary import Vocabulary
+
+import os
+from dotenv import load_dotenv
+from pydantic import SecretStr
+
+load_dotenv()
 
 
 def resolve_episode_dir() -> Path:
@@ -22,14 +28,10 @@ def resolve_episode_dir() -> Path:
     episode_dir = current / "LT_Episodes"
     return episode_dir
 
-import os
-from dotenv import load_dotenv
-from pydantic import SecretStr
-
-load_dotenv()
 
 raw_api_key = os.getenv("MISTRAL_API_KEY")
 API_KEY = SecretStr(raw_api_key) if raw_api_key else None
+
 
 def setup_tutor_service(runner: Runner) -> Tutor:
     # tutor_model = ChatOllama(model=QWEN25_14B_MODEL, temperature=0.55)
@@ -38,12 +40,16 @@ def setup_tutor_service(runner: Runner) -> Tutor:
 
 
 def setup_topic_generator_service(runner: Runner) -> TopicGenerator:
-    topic_generator_model = ChatOllama(model=QWEN25_7B_MODEL, temperature=0.8, format="json")
+    topic_generator_model = ChatOllama(
+        model=QWEN25_7B_MODEL, temperature=0.8, format="json"
+    )
     return TopicGenerator(runner=runner, model=topic_generator_model)
 
 
 def setup_word_recommender_service(runner: Runner) -> WordRecommender:
-    word_recommender_model = ChatOllama(model=QWEN25_7B_MODEL, temperature=0.15, format="json")
+    word_recommender_model = ChatOllama(
+        model=QWEN25_7B_MODEL, temperature=0.15, format="json"
+    )
     return WordRecommender(runner=runner, model=word_recommender_model)
 
 

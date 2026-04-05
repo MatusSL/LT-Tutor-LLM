@@ -1,155 +1,142 @@
-from google.cloud.firestore_v1 import Increment, SERVER_TIMESTAMP, FieldFilter
-from datetime import datetime, timezone, timedelta
-from typing import Any
+from typing import Set
 
-from app.database.supabase_setup import db
+from postgrest import APIResponse
 
-UNLOCKED_WORDS = "unlocked_words"
-EPISODES = "episodes"
+from app.database.supabase_setup import get_supabase
+from app.schemas.models import Table, WordModel, UserModel, User
 
 
 def insert_word(word: str) -> None:
-    if word == "" or word is None:
+    if word.strip() == "" or word is None:
         return
 
-    doc_ref = db.collection(UNLOCKED_WORDS).document(word)
-    doc = doc_ref.get()
+    payload = WordModel(word=word)
 
-    exists = getattr(doc, "exists", False)
-
-    if exists:
-        doc_ref.update({"last_used": SERVER_TIMESTAMP, "times_used": Increment(1)})
-
-    else:
-        doc_ref.set(
-            {
-                "word": word,
-                "last_used": SERVER_TIMESTAMP,
-                "times_used": 1,
-                "mistakes": 0,
-                "is_high_frequency_word": False,
-            }
-        )
+    get_supabase().table(Table.WORDS).insert(payload.model_dump()).execute()
 
 
-def insert_all_words(words: set[str]):
+def insert_all_words(words: Set[str]):
     for word in words:
         insert_word(word)
 
 
-def set_max_episode_completed(episode: int) -> None:
-    collection = db.collection(EPISODES)
+def update_max_episode_completed(episode: int) -> None:
+    get_supabase().table(Table.USERS).update({User.MAX_EPISODE: episode}).eq(
+        User.DISPLAY_NAME, "matus"
+    ).execute()
 
-    doc_ref = collection.document("max_episode_completed")
-    doc = doc_ref.get()
 
-    exists = getattr(doc, "exists", False)
-    if not exists:
-        doc_ref.update({episode: episode})
-        return
-
-    current_max_completed_episode = get_max_episode_completed()
-    if episode < current_max_completed_episode:
-        return
-
-    doc_ref.update({episode: episode})
+# def create_user(user_model: UserModel) -> None:
+#     get_supabase().table(Table.USERS).insert(user_model.model_dump()).execute()
 
 
 def get_max_episode_completed() -> int:
-    doc = db.collection(EPISODES).document("max_episode_completed").get()
-
-    exists = getattr(doc, "exists", False)
-    if not exists:
-        return -1
-
-    return doc.get("episode")  # type: ignore
-
-
-def update_misused_words(misused_words: set[str]) -> None:
-    if len(misused_words) == 0:
-        return
-
-    collection = db.collection(UNLOCKED_WORDS)
-
-    for misused_word in misused_words:
-        if misused_word == "":
-            continue
-
-        doc_ref = collection.document(misused_word)
-        doc = doc_ref.get()
-
-        exists = getattr(doc, "exists", False)
-        if not exists:
-            continue
-
-        doc_ref.update(
-            {
-                "last_used": SERVER_TIMESTAMP,
-                "times_used": Increment(1),
-                "mistakes": Increment(1),
-            }
-        )
-
-
-def update_high_frequency_words(high_freq_words: set[str]) -> None:
-    if len(high_freq_words) == 0:
-        return
-
-    collection = db.collection(UNLOCKED_WORDS)
-
-    for word in high_freq_words:
-        if word == "":
-            continue
-
-        doc_ref = collection.document(word)
-        doc = doc_ref.get()
-
-        exists = getattr(doc, "exists", False)
-        if not exists:
-            continue
-
-        doc_ref.update({"is_high_frequency_word": True})
-
-
-def load_vocabulary() -> set[str]:
-    docs = db.collection(UNLOCKED_WORDS).stream()
-
-    return {doc.id for doc in docs}
-
-
-def get_todays_words() -> dict[str, dict[str, Any]]:
-    now = datetime.now(timezone.utc)
-
-    start_of_today = datetime(
-        year=now.year, month=now.month, day=now.day, tzinfo=timezone.utc
+    response = (
+        get_supabase()
+        .table(Table.USERS)
+        .select("*")
+        .eq(User.DISPLAY_NAME, "matus")
+        .execute()
     )
 
-    start_of_tomorrow = start_of_today + timedelta(days=1)
-
-    docs = (
-        db.collection(UNLOCKED_WORDS)
-        .where(filter=FieldFilter("last_used", ">=", start_of_today))
-        .where(filter=FieldFilter("last_used", "<=", start_of_tomorrow))
-        .stream()
-    )
-
-    todays_words: dict[str, dict[str, Any]] = {}
-
-    for doc in docs:
-        report = doc.to_dict()
-
-        if report is None:
-            continue
-
-        word = doc.id
-        todays_words[word] = report
-
-    print(todays_words)
-    return todays_words
+    return UserModel.model_validate(response.data[0]).max_episode
 
 
-def print_db():
-    docs = db.collection(UNLOCKED_WORDS).stream()
+# def update_misused_words(misused_words: set[str]) -> None:
+#     if len(misused_words) == 0:
+#         return
 
-    for doc in docs:
-        print(f"{doc.id} -> {doc.to_dict()}")
+#     collection = db.collection(UNLOCKED_WORDS)
+
+#     for misused_word in misused_words:
+#         if misused_word == "":
+#             continue
+
+#         doc_ref = collection.document(misused_word)
+#         doc = doc_ref.get()
+
+#         exists = getattr(doc, "exists", False)
+#         if not exists:
+#             continue
+
+#         doc_ref.update(
+#             {
+#                 "last_used": SERVER_TIMESTAMP,
+#                 "times_used": Increment(1),
+#                 "mistakes": Increment(1),
+#             }
+#         )
+
+
+# def update_high_frequency_words(high_freq_words: set[str]) -> None:
+#     if len(high_freq_words) == 0:
+#         return
+
+#     collection = db.collection(UNLOCKED_WORDS)
+
+#     for word in high_freq_words:
+#         if word == "":
+#             continue
+
+#         doc_ref = collection.document(word)
+#         doc = doc_ref.get()
+
+#         exists = getattr(doc, "exists", False)
+#         if not exists:
+#             continue
+
+#         doc_ref.update({"is_high_frequency_word": True})
+
+
+def get_words_from_response(response: APIResponse) -> Set[str]:
+    result: Set[str] = set()
+
+    for batch in response.data:
+        word_model = WordModel.model_validate(batch)
+        result.add(word_model.word)
+
+    return result
+
+
+def load_vocabulary() -> Set[str]:
+    response = get_supabase().table(Table.WORDS).select("*").execute()
+    vocabulary = get_words_from_response(response)
+    return vocabulary
+
+
+# def get_todays_words() -> dict[str, dict[str, Any]]:
+#     now = datetime.now(timezone.utc)
+
+#     start_of_today = datetime(
+#         year=now.year, month=now.month, day=now.day, tzinfo=timezone.utc
+#     )
+
+#     start_of_tomorrow = start_of_today + timedelta(days=1)
+
+#     docs = (
+#         db.collection(UNLOCKED_WORDS)
+#         .where(filter=FieldFilter("last_used", ">=", start_of_today))
+#         .where(filter=FieldFilter("last_used", "<=", start_of_tomorrow))
+#         .stream()
+#     )
+
+#     todays_words: dict[str, dict[str, Any]] = {}
+
+#     for doc in docs:
+#         report = doc.to_dict()
+
+#         if report is None:
+#             continue
+
+#         word = doc.id
+#         todays_words[word] = report
+
+#     print(todays_words)
+#     return todays_words
+
+
+# def print_db():
+#     docs = db.collection(UNLOCKED_WORDS).stream()
+
+#     for doc in docs:
+#         print(f"{doc.id} -> {doc.to_dict()}")

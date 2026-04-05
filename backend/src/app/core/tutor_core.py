@@ -76,18 +76,6 @@ class TutorCore:
 
         return UserInputAnalysis(set_of_words=used_words, misused_words=misused_words)
 
-    def get_explanations_from_analysis(self, response: TutorResponse) -> list[str]:
-        correction = response.correction
-
-        if correction is None:
-            return []
-
-        explanations: list[str] = []
-        for candidate in correction.error_candidates:
-            explanation = candidate.explanation
-            explanations.append(explanation)
-
-        return explanations
 
     def get_chat_response_fallback(self):
         return ChatResponse(

@@ -25,6 +25,49 @@ class Language(str, Enum):
     # JAPANEESE = "japaneese"
 
 
+class Table(str, Enum):
+    USERS = "users"
+    WORDS = "words"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class User(str, Enum):
+    ID = "id"
+    DISPLAY_NAME = "display_name"
+    MAX_EPISODE = "max_episode"
+    LANGUAGE = "language"
+    CREATED_AT = "created_at"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class Word(str, Enum):
+    ID = "id"
+    USER_ID = "user_id"
+    WORD = "word"
+    TRANSLATION = "translation"
+    IS_HIGH_FREQUENCY = "is_high_frequency"
+    CREATED_AT = "created_at"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class WordModel(BaseModel):
+    word: str
+    translation: str | None = Field(default=None)
+    is_high_frequency: bool = Field(default=False)
+
+
+class UserModel(BaseModel):
+    display_name: str
+    max_episode: int = Field(default=1, ge=0)
+    language: Language
+
+
 @dataclass
 class TutorResult:
     is_correct: bool
@@ -35,6 +78,7 @@ class TutorResult:
 class UserInputAnalysis:
     set_of_words: set[str]
     misused_words: set[str]
+
 
 
 class Topic(BaseModel):
@@ -96,3 +140,25 @@ class ChatResponse(BaseModel):
     response: str
     tutor_response: TutorResponse
     response_audio: str | None = None
+
+
+class EpisodeRequest(BaseModel):
+    episode: int
+
+
+class EpisodeResponse(BaseModel):
+    status: str
+    episode: int
+    topics: Topics
+
+class CurrentEpisodeResponse(BaseModel):
+    episode: int
+
+class SavedEpisodeResponse(BaseModel):
+    status: str
+    episode: int
+    topics: Topics
+
+
+class HealthResponse(BaseModel):
+    status: str

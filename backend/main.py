@@ -4,10 +4,9 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 from app.core.build_tutor_core import build_tutor_core
-from app.schemas.models import ChatResponse, Topics, UserInput
+from app.schemas.models import ChatResponse, CurrentEpisodeResponse, EpisodeRequest, EpisodeResponse, HealthResponse, SavedEpisodeResponse, Topics, UserInput
 from app.services import stt_service, tts_service
 
 app = FastAPI()
@@ -22,16 +21,12 @@ app.add_middleware(
 tutor_core = build_tutor_core()
 
 
-class HealthResponse(BaseModel):
-    status: str
-
-
 @app.get("/health", response_model=HealthResponse)
 def health_check():
     return HealthResponse(status="ok")
 
 
-# tutor_core.handle_message(user_input="Hola, como estas?")
+tutor_core.handle_message(user_input="Hola, como estas?")
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -58,28 +53,14 @@ async def transcribe_endpoint(audio: UploadFile = File(...)):
         os.unlink(tmp_path)
 
 
-class EpisodeRequest(BaseModel):
-    episode: int
-
-
-class EpisodeResponse(BaseModel):
-    status: str
-    episode: int
-    topics: Topics
-
-
-class SavedEpisodeResponse(BaseModel):
-    status: str
-    episode: int
-    topics: Topics
-
-
 def load_episode_vocabulary_into_session(active_tutor_core, episode: int) -> None:
     unlocked_words = active_tutor_core.session_manager.get_unlocked_words_from_episodes(
         1, episode
     )
     active_tutor_core.session_state.vocabulary = unlocked_words
+    active_tutor_core.vocabulary.insert_all_words(unlocked_words)
 
+load_episode_vocabulary_into_session(tutor_core, 34)
 
 def build_episode_response(active_tutor_core, episode: int) -> EpisodeResponse:
     load_episode_vocabulary_into_session(active_tutor_core, episode)
@@ -97,10 +78,16 @@ def build_saved_episode_response(active_tutor_core) -> SavedEpisodeResponse:
 
 @app.post("/episode", response_model=EpisodeResponse)
 def set_episode(request: EpisodeRequest):
-    tutor_core.vocabulary.set_max_episode_completed(request.episode)
+    tutor_core.vocabulary.update_max_episode_completed(request.episode)
     return build_episode_response(tutor_core, request.episode)
 
 
 @app.get("/episode/saved", response_model=SavedEpisodeResponse)
 def load_saved_episode():
     return build_saved_episode_response(tutor_core)
+
+
+@app.get("/episode/current", response_model=CurrentEpisodeResponse)
+def get_current_episode():
+    current_episode = tutor_core.vocabulary.get_max_episode_completed()
+    return CurrentEpisodeResponse(episode=current_episode)

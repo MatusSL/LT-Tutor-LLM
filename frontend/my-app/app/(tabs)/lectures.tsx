@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,20 +12,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { requestEpisodeTopics } from "@/services/tutor-api";
-
-const C = {
-  bg: "#0F0F13",
-  surface: "#1A1A24",
-  border: "rgba(255,255,255,0.07)",
-  accent: "#6C63FF",
-  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566" },
-};
+import { requestEpisodeTopics, requestCurrentEpisode } from "@/services/tutor-api";
+import { C } from "@/constants/colors";
 
 const EPISODE_COUNT = 90;
 
 export default function LecturesScreen() {
   const [selectedLecture, setSelectedLecture] = useState(0);
+  const [currentLecture, setCurrentLecture] = useState<number | null>(null)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +28,24 @@ export default function LecturesScreen() {
   const handlePress = (lecture: number) => {
     setSelectedLecture(lecture === selectedLecture ? 0 : lecture);
   };
+
+  useEffect(() => {
+    const fetchCurrentEpisode = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const payload = await requestCurrentEpisode()
+        setCurrentLecture(payload.episode)
+        setSelectedLecture(payload.episode)
+      } catch(err) {
+        setError("Could not load current episode.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void fetchCurrentEpisode()
+  }, [])
 
   const handleConfirm = async () => {
     if (selectedLecture === 0 || loading) return;
@@ -51,6 +63,7 @@ export default function LecturesScreen() {
 
   const renderItem: ListRenderItem<number> = ({ item }) => {
     const isSelected = item <= selectedLecture;
+    
     return (
       <Pressable style={styles.row} onPress={() => handlePress(item)}>
         <Text style={styles.rowText}>Episode {item}</Text>
