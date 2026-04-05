@@ -3,7 +3,7 @@ from typing import Set
 from postgrest import APIResponse
 
 from app.database.supabase_setup import get_supabase
-from app.schemas.models import Table, User, UserInputAnalysis, UserModel, Word, WordModel
+from app.schemas.models import Table, User, UserInputAnalysis, UserModel, WordModel
 
 from app.utils.helpers import normalize_user_input
 
