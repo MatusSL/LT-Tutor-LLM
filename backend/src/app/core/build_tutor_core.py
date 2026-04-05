@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from langchain_ollama import ChatOllama
+from langchain_mistralai.chat_models import ChatMistralAI
 
 from app.agents.runner import Runner
 from app.agents.topic_generator import TopicGenerator
@@ -21,9 +22,18 @@ def resolve_episode_dir() -> Path:
     episode_dir = current / "LT_Episodes"
     return episode_dir
 
+import os
+from dotenv import load_dotenv
+from pydantic import SecretStr
+
+load_dotenv()
+
+raw_api_key = os.getenv("MISTRAL_API_KEY")
+API_KEY = SecretStr(raw_api_key) if raw_api_key else None
 
 def setup_tutor_service(runner: Runner) -> Tutor:
-    tutor_model = ChatOllama(model=QWEN25_14B_MODEL, temperature=0.55)
+    # tutor_model = ChatOllama(model=QWEN25_14B_MODEL, temperature=0.55)
+    tutor_model = ChatMistralAI(api_key=API_KEY)
     return Tutor(runner=runner, model=tutor_model)
 
 

@@ -1,6 +1,7 @@
 import json
 import re
 
+from langchain_mistralai import ChatMistralAI
 from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
 
@@ -18,7 +19,7 @@ MAX_RETRIES = 3
 
 
 class Tutor:
-    def __init__(self, runner: Runner, model: ChatOllama) -> None:
+    def __init__(self, runner: Runner, model: ChatOllama | ChatMistralAI) -> None:
         self.agent = create_agent(model=model)
         self.runner = runner
 

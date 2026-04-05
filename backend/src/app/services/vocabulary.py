@@ -1,4 +1,4 @@
-from app.database.firestore import db
+from app.database.supabase_setup import db
 from google.cloud.firestore_v1 import Increment, SERVER_TIMESTAMP
 from app.schemas.models import UserInputAnalysis
 
@@ -11,7 +11,13 @@ EPISODES = "episodes"
 
 class Vocabulary:
     def __init__(self):
-        self.words: set[str] = self.load_vocabulary()
+        self._words: set[str] | None = None
+
+    @property
+    def words(self) -> set[str]:
+        if self._words is None:
+            self._words = self.load_vocabulary()
+        return self._words
 
     # * Database operation
     def load_vocabulary(self) -> set[str]:

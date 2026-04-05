@@ -2,7 +2,7 @@ from google.cloud.firestore_v1 import Increment, SERVER_TIMESTAMP, FieldFilter
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from app.database.firestore import db
+from app.database.supabase_setup import db
 
 UNLOCKED_WORDS = "unlocked_words"
 EPISODES = "episodes"
