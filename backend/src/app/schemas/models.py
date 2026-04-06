@@ -21,6 +21,11 @@ class BlankWord:
     sentence: str
     error_candidates: List[str]
 
+@dataclass
+class Flashcard:
+    word: str
+    translation: str
+
 class Language(str, Enum):
     ENGLISH = "english"
     SPANISH = "spanish"
@@ -36,6 +41,7 @@ class Language(str, Enum):
 class Table(str, Enum):
     USERS = "users"
     WORDS = "words"
+    MISTAKES = "mistakes"
     def __str__(self) -> str:
         return self.value
 
@@ -59,6 +65,26 @@ class Word(str, Enum):
     UPDATED_AT = "updated_at"
     def __str__(self) -> str:
         return self.value
+
+
+class Mistake(str, Enum):
+    ID = "id"
+    ORIGIN = "origin"
+    CORRECTED = "corrected"
+    SENTENCE = "sentence"
+    TRANSLATION = "translation"
+    CREATED_AT = "created_at"
+    UPDATED_AT = "updated_at"
+    def __str__(self) -> str:
+        return self.value
+
+
+class MistakeModel(BaseModel):
+    origin: str
+    corrected: str
+    sentence: str
+    translation: str
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class WordModel(BaseModel):
@@ -100,9 +126,10 @@ class Topics(BaseModel):
 
 class ErrorCandidate(BaseModel):
     word: str
+    translation: str
     span: list[int]
     error_type: str
-    suggested_correction: str
+    correction: str
     explanation: str
 
 

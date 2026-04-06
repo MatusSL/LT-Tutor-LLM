@@ -53,8 +53,8 @@ def setup_word_recommender_service(runner: Runner) -> WordRecommender:
     )
     return WordRecommender(runner=runner, model=word_recommender_model)
 
-def setup_review_service(runner: Runner):
-    gap_filler = GapFiller(runner, ChatMistralAI(api_key=API_KEY))
+# def setup_review_service(runner: Runner):
+#     gap_filler = GapFiller(runner, ChatMistralAI(api_key=API_KEY))
 
 def build_tutor_core() -> TutorCore:
     runner = Runner()

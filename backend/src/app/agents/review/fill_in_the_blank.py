@@ -1,9 +1,9 @@
 import json
 import re
-from typing import List
+from typing import List, Set
 
 from app.agents.runner import Runner
-from app.schemas.models import BlankWord
+from app.schemas.models import BlankWord, ErrorCandidate, MistakeModel
 from langchain.agents import create_agent
 from langchain_mistralai import ChatMistralAI
 
@@ -27,16 +27,17 @@ OUTPUT FORMAT — return ONLY valid JSON, nothing else:
 
 
 class GapFiller:
-    def __init__(self, runner: Runner, model: ChatMistralAI) -> None:
+    def __init__(self, runner: Runner, model: ChatMistralAI, mistakes: Set[MistakeModel]) -> None:
         self.agent = create_agent(model=model, system_prompt=SYSTEM_PROMPT)
         self.runner = runner
         self.blank_words: List[BlankWord] = []
 
-    def add_word(self, origin: str, corrected: str, sentence: str):
+    def add_word(self, error: ErrorCandidate, sentence: str):
+        corrected = error.correction
         error_candidates = self.propose_two_error_candidates(corrected, sentence)
 
         payload = BlankWord(
-            origin=origin,
+            origin=error.word,
             corrected=corrected,
             sentence=sentence,
             error_candidates=error_candidates,

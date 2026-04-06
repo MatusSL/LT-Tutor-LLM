@@ -1,9 +1,9 @@
-from typing import Set
+from typing import List, Set
 
 from postgrest import APIResponse
 
 from app.database.supabase_setup import get_supabase
-from app.schemas.models import Table, User, UserInputAnalysis, UserModel, WordModel
+from app.schemas.models import ErrorCandidate, MistakeModel, Table, User, UserInputAnalysis, UserModel, WordModel
 
 from app.utils.helpers import normalize_user_input
 
@@ -68,6 +68,39 @@ class Vocabulary:
         )
         .execute()
         )
+
+    # * Database operation
+    def insert_mistake(self, error: ErrorCandidate, sentence: str) -> None:
+        if error.word is None or error.word.strip() == "":
+            return
+
+        payload = MistakeModel(
+            origin=error.word,
+            corrected=error.correction,
+            sentence=sentence,
+            translation=error.translation
+        )
+
+        (
+        get_supabase()
+        .table(Table.MISTAKES)
+        .upsert(
+            payload.model_dump(exclude_none=True),
+            on_conflict="origin"
+        )
+        .execute()
+        )
+
+    # * Database operation
+    def get_all_mistakes(self) -> List[MistakeModel]:
+        response = (
+            get_supabase()
+            .table(Table.MISTAKES)
+            .select("*")
+            .execute()
+        )
+
+        return [MistakeModel.model_validate(row) for row in response.data]
 
     def insert_all_words(self, words: Set[str]):
         for word in words:

@@ -124,9 +124,10 @@ The JSON object MUST match this schema exactly:
     "error_candidates": [
       {{
         "word": "string",
+        "translation": "string",
         "span": [start_index, end_index],
         "error_type": "grammar | vocabulary | spelling | word_order | agreement",
-        "suggested_correction": "string",
+        "correction": "string",
         "explanation": "short explanation"
       }}
     ]

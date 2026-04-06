@@ -58,6 +58,14 @@ class TutorCore:
                 )
 
                 self.session_state.vocabulary.update(verified_new_words)
+            
+            if correction is not None and len(correction.error_candidates) > 0:
+                for mistake in correction.error_candidates:
+                    self.vocabulary.insert_mistake(
+                        error=mistake,
+                        sentence=correction.original
+                    )
+
 
         return ChatResponse(response=reply, tutor_response=response_json)
 

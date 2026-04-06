@@ -41,7 +41,7 @@ def make_correction(
                 word="soy",
                 span=[3, 6],
                 error_type="grammar",
-                suggested_correction="estoy",
+                correction="estoy",
                 explanation="Use 'estoy' for temporary states.",
             )
         ]
@@ -80,7 +80,7 @@ class TestAnalyizeResponse:
                     word="soy",
                     span=[3, 6],
                     error_type="grammar",
-                    suggested_correction="estoy",
+                    correction="estoy",
                     explanation="",
                 )
             ]
@@ -97,14 +97,14 @@ class TestAnalyizeResponse:
                     word="una",
                     span=[0, 3],
                     error_type="agreement",
-                    suggested_correction="un",
+                    correction="un",
                     explanation="",
                 ),
                 ErrorCandidate(
                     word="problema",
                     span=[4, 12],
                     error_type="vocabulary",
-                    suggested_correction="error",
+                    correction="error",
                     explanation="",
                 ),
             ]
@@ -135,7 +135,7 @@ class TestGetExplanations:
                     word="soy",
                     span=[3, 6],
                     error_type="grammar",
-                    suggested_correction="estoy",
+                    correction="estoy",
                     explanation="Use 'estoy' not 'soy' for conditions.",
                 )
             ]
@@ -152,14 +152,14 @@ class TestGetExplanations:
                     word="a",
                     span=[0, 1],
                     error_type="grammar",
-                    suggested_correction="b",
+                    correction="b",
                     explanation="Explanation A",
                 ),
                 ErrorCandidate(
                     word="c",
                     span=[2, 3],
                     error_type="spelling",
-                    suggested_correction="d",
+                    correction="d",
                     explanation="Explanation B",
                 ),
             ]
@@ -252,14 +252,14 @@ class TestHandleMessage:
                     word="a",
                     span=[0, 1],
                     error_type="grammar",
-                    suggested_correction="b",
+                    correction="b",
                     explanation="",
                 ),
                 ErrorCandidate(
                     word="c",
                     span=[2, 3],
                     error_type="grammar",
-                    suggested_correction="d",
+                    correction="d",
                     explanation="",
                 ),
             ]
@@ -277,7 +277,7 @@ class TestHandleMessage:
                     word="soy",
                     span=[3, 6],
                     error_type="grammar",
-                    suggested_correction="estoy",
+                    correction="estoy",
                     explanation="",
                 ),
             ]
