@@ -9,10 +9,17 @@ QWEN25_14B_MODEL = "qwen2.5:14b"
 LLAMA32_MODEL = "llama3.2:latest"
 LLAMA31 = "llama3.1:8b"
 
+# type ReviewType = Literal["flashcards", "quiz", "blank", "correction"]
 type LLMResponse = Dict[str, Any]
-
+# type ReviewMap = Dict[ReviewType, str]
 type History = List[Dict[str, str]]
 
+@dataclass
+class BlankWord:
+    origin: str
+    corrected: str
+    sentence: str
+    error_candidates: List[str]
 
 class Language(str, Enum):
     ENGLISH = "english"

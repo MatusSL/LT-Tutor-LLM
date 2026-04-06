@@ -6,7 +6,16 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.build_tutor_core import build_tutor_core
-from app.schemas.models import ChatResponse, CurrentEpisodeResponse, EpisodeRequest, EpisodeResponse, HealthResponse, SavedEpisodeResponse, Topics, UserInput
+from app.schemas.models import (
+    ChatResponse,
+    CurrentEpisodeResponse,
+    EpisodeRequest,
+    EpisodeResponse,
+    HealthResponse,
+    SavedEpisodeResponse,
+    Topics,
+    UserInput
+)
 from app.services import stt_service, tts_service
 
 app = FastAPI()
@@ -26,7 +35,7 @@ def health_check():
     return HealthResponse(status="ok")
 
 
-# tutor_core.handle_message(user_input="Hola, como estas?")
+tutor_core.handle_message(user_input="Te voy a digo algo nuevo!")
 
 
 @app.post("/chat", response_model=ChatResponse)

@@ -3,6 +3,7 @@ from pathlib import Path
 from langchain_ollama import ChatOllama
 from langchain_mistralai.chat_models import ChatMistralAI
 
+from app.agents.review.fill_in_the_blank import GapFiller
 from app.agents.runner import Runner
 from app.agents.topic_generator import TopicGenerator
 from app.agents.tutor import Tutor
@@ -52,6 +53,8 @@ def setup_word_recommender_service(runner: Runner) -> WordRecommender:
     )
     return WordRecommender(runner=runner, model=word_recommender_model)
 
+def setup_review_service(runner: Runner):
+    gap_filler = GapFiller(runner, ChatMistralAI(api_key=API_KEY))
 
 def build_tutor_core() -> TutorCore:
     runner = Runner()
@@ -71,3 +74,9 @@ def build_tutor_core() -> TutorCore:
         vocabulary=vocabulary,
         episodes_dir=episode_dir,
     )
+
+
+# if __name__ == "__main__":
+#     g = GapFiller(Runner(), ChatMistralAI(api_key=API_KEY))
+#     g.add_word(origin="digo", corrected="decir", sentence="Te voy a digo algo nuevo!")
+    
