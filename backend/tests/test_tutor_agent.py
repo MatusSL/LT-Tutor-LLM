@@ -2,7 +2,7 @@ import json
 import pytest
 
 from app.agents.tutor import Tutor
-from app.schemas.models import Language
+from app.schemas.db import Language
 
 
 @pytest.fixture

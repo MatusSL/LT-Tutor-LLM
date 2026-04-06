@@ -1,11 +1,8 @@
-import json
-import re
 from typing import List, Set
 
-from app.agents.runner import Runner
-from app.schemas.models import BlankWord, ErrorCandidate, MistakeModel
-from langchain.agents import create_agent
-from langchain_mistralai import ChatMistralAI
+from app.schemas.db import MistakeModel
+from app.schemas.llm import ErrorCandidate
+from app.schemas.review import BlankWord
 
 SYSTEM_PROMPT = """\
 You are a Spanish language exercise designer.
@@ -27,51 +24,8 @@ OUTPUT FORMAT — return ONLY valid JSON, nothing else:
 
 
 class GapFiller:
-    def __init__(self, runner: Runner, model: ChatMistralAI, mistakes: Set[MistakeModel]) -> None:
-        self.agent = create_agent(model=model, system_prompt=SYSTEM_PROMPT)
-        self.runner = runner
+    def __init__(self, mistakes: Set[MistakeModel]) -> None:
         self.blank_words: List[BlankWord] = []
 
     def add_word(self, error: ErrorCandidate, sentence: str):
-        corrected = error.correction
-        error_candidates = self.propose_two_error_candidates(corrected, sentence)
-
-        payload = BlankWord(
-            origin=error.word,
-            corrected=corrected,
-            sentence=sentence,
-            error_candidates=error_candidates,
-        )
-
-        self.blank_words.append(payload)
-
-    def propose_two_error_candidates(self, correct_word: str, sentence: str) -> List[str]:
-        user_input = (
-            f"Sentence: \"{sentence}\"\n"
-            f"Correct word: \"{correct_word}\""
-        )
-
-        MAX_RETRIES = 3
-        for attempt in range(MAX_RETRIES):
-            response = self.runner.run_agent(self.agent, user_input)
-            try:
-                return self._parse_candidates(response)
-            except Exception:
-                if attempt == MAX_RETRIES - 1:
-                    pass
-
-        return []
-
-    def _parse_candidates(self, response_text: str) -> List[str]:
-        try:
-            data = json.loads(response_text)
-            return data["error_candidates"][:2]
-        except Exception:
-            pass
-
-        match = re.search(r"\{.*\}", response_text, re.DOTALL)
-        if match:
-            data = json.loads(match.group(0))
-            return data["error_candidates"][:2]
-
-        raise ValueError("Failed to parse error candidates")
+        ...

@@ -3,7 +3,7 @@ from typing import Set
 from postgrest import APIResponse
 
 from app.database.supabase_setup import get_supabase
-from app.schemas.models import Table, WordModel, UserModel, User
+from app.schemas.db import Table, WordModel, UserModel, User
 
 
 def insert_word(word: str) -> None:

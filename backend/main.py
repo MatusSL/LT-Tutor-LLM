@@ -6,16 +6,16 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.build_tutor_core import build_tutor_core
-from app.schemas.models import (
+from app.schemas.api import (
     ChatResponse,
     CurrentEpisodeResponse,
     EpisodeRequest,
     EpisodeResponse,
     HealthResponse,
     SavedEpisodeResponse,
-    Topics,
-    UserInput
+    UserInput,
 )
+from app.schemas.llm import Topics
 from app.services import stt_service, tts_service
 
 app = FastAPI()

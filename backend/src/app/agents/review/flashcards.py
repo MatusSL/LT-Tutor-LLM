@@ -1,5 +1,6 @@
 from typing import List, Set
-from app.schemas.models import Flashcard, MistakeModel
+from app.schemas.db import MistakeModel
+from app.schemas.review import Flashcard
 
 
 class CardBuilder:

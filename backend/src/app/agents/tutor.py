@@ -7,11 +7,9 @@ from langchain.agents import create_agent
 
 from app.agents.runner import Runner
 from app.prompts.merged_tutor_prompt import MERGED_TUTOR_PROMPT
-from app.schemas.models import (
-    History,
-    Language,
-    TutorResponse,
-)
+from app.schemas.constants import History
+from app.schemas.db import Language
+from app.schemas.llm import TutorResponse
 
 REPLY_DELIMITER = "---REPLY---"
 JSON_DELIMITER = "---JSON---"

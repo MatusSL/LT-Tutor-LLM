@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Set
 
-from app.schemas.models import History, LLMResponse, Language
+from app.schemas.constants import History, LLMResponse
+from app.schemas.db import Language
 
 
 @dataclass

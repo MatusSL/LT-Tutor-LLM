@@ -7,7 +7,10 @@ from app.agents.word_recommender import WordRecommender
 from app.core.session_state import SessionState
 from app.core.session_manager import SessionManager
 
-from app.schemas.models import ChatResponse, UserInputAnalysis, TutorResponse, Language
+from app.schemas.api import ChatResponse
+from app.schemas.db import Language
+from app.schemas.llm import TutorResponse
+from app.schemas.session import UserInputAnalysis
 
 from app.services.vocabulary import Vocabulary
 

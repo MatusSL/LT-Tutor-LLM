@@ -1,6 +1,6 @@
 import re
 
-from app.schemas.models import Topic, Topics
+from app.schemas.llm import Topic, Topics
 
 from app.prompts.topic_generator_prompt import TOPIC_GENERATOR_PROMPT
 from app.agents.runner import Runner

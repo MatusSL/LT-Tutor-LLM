@@ -3,7 +3,9 @@ from typing import List, Set
 from postgrest import APIResponse
 
 from app.database.supabase_setup import get_supabase
-from app.schemas.models import ErrorCandidate, MistakeModel, Table, User, UserInputAnalysis, UserModel, WordModel
+from app.schemas.db import MistakeModel, Table, User, UserModel, WordModel
+from app.schemas.llm import ErrorCandidate
+from app.schemas.session import UserInputAnalysis
 
 from app.utils.helpers import normalize_user_input
 
@@ -74,11 +76,14 @@ class Vocabulary:
         if error.word is None or error.word.strip() == "":
             return
 
+        distractions = {}
+
         payload = MistakeModel(
             origin=error.word,
             corrected=error.correction,
             sentence=sentence,
-            translation=error.translation
+            translation=error.translation,
+            distractions=distractions
         )
 
         (

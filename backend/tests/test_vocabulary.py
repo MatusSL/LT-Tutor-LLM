@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.schemas.models import UserInputAnalysis
+from app.schemas.session import UserInputAnalysis
 
 
 @pytest.fixture

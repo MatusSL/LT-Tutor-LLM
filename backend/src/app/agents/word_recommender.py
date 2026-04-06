@@ -5,7 +5,7 @@ from app.agents.runner import Runner
 from langchain.agents import create_agent
 from langchain_ollama import ChatOllama
 
-from app.schemas.models import HighFrequencyWords
+from app.schemas.llm import HighFrequencyWords
 from app.prompts.word_recommender_prompt import HIGH_FREQUENCY_FILTER_PROMPT
 
 high_freq_words_fallback = HighFrequencyWords(high_frequency_words=[])

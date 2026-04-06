@@ -3,13 +3,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.core.tutor_core import TutorCore
-from app.schemas.models import (
-    ChatResponse,
-    Correction,
-    ErrorCandidate,
-    Language,
-    TutorResponse,
-)
+from app.schemas.api import ChatResponse
+from app.schemas.db import Language
+from app.schemas.llm import Correction, ErrorCandidate
+from app.schemas.llm import TutorResponse
 
 
 def make_tutor_response(

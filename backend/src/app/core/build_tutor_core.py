@@ -3,7 +3,7 @@ from pathlib import Path
 from langchain_ollama import ChatOllama
 from langchain_mistralai.chat_models import ChatMistralAI
 
-from app.agents.review.fill_in_the_blank import GapFiller
+# from app.agents.review.fill_in_the_blank import GapFiller
 from app.agents.runner import Runner
 from app.agents.topic_generator import TopicGenerator
 from app.agents.tutor import Tutor
@@ -11,7 +11,7 @@ from app.agents.word_recommender import WordRecommender
 
 from app.core.tutor_core import TutorCore
 
-from app.schemas.models import QWEN25_7B_MODEL
+from app.schemas.constants import QWEN25_7B_MODEL
 from app.services.vocabulary import Vocabulary
 
 import os

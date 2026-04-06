@@ -1,6 +1,6 @@
 from langchain.messages import HumanMessage, AIMessage
 from langchain_core.runnables import Runnable
-from app.schemas.models import LLMResponse
+from app.schemas.constants import LLMResponse
 
 
 class Runner:
