@@ -1,0 +1,97 @@
+# Reviewer System Plan
+
+## Context
+
+The frontend has 4 review types (Fill in the Blank, Phrase Quiz, Flashcards, Error Correction) running on hardcoded mock data. We need a backend Reviewer coordinator class with 4 field-agents (one per review type) that generate review content from the user's vocabulary via LLM calls. Each field-agent follows the existing TopicGenerator/WordRecommender pattern.
+
+## Architecture
+
+```
+Reviewer (coordinator, no LLM)
+├── GapFiller          — Fill in the Blank agent
+├── PhraseExaminer     — Phrase Quiz agent
+├── CardBuilder        — Flashcards agent
+└── GrammarChecker     — Error Correction agent
+```
+
+Data flow: API request → TutorCore.generate_review() → Reviewer.generate_review() → field-agent → LLM → parsed Pydantic model → response
+
+Vocabulary source: self.vocabulary.words already available in TutorCore (loaded from Supabase).
+
+## Agent Names & Purposes
+
+| Agent Class      | Purpose                                                                 |
+|------------------|-------------------------------------------------------------------------|
+| GapFiller        | Generates sentences with a missing word + 4 options (fill-in-the-blank) |
+| PhraseExaminer   | Generates Spanish phrases with 4 English translation options (MCQ)      |
+| CardBuilder      | Generates Spanish/English word pairs for flashcard review               |
+| GrammarChecker   | Generates sentences with deliberate errors for the user to find         |
+| Reviewer         | Coordinator — dispatches to the correct field-agent by review type      |
+
+## Implementation Steps
+
+### 1. Add Pydantic models to schemas/models.py
+- ReviewType enum: fill_in_the_blank, phrase_quiz, flashcards, error_correction
+- Per-type models: FillBlankQuestion, PhraseQuizQuestion, FlashcardPair, ErrorCorrectionQuestion
+- Wrapper models: FillBlankReview, PhraseQuizReview, FlashcardReview, ErrorCorrectionReview
+- ReviewRequest(review_type: ReviewType) and ReviewResponse (envelope with one populated field per type)
+
+### 2. Create 4 prompt files in prompts/
+- gap_filler_prompt.py         — generate 10 fill-in-blank questions from vocabulary
+- phrase_examiner_prompt.py    — generate 10 Spanish→English translation MCQs
+- card_builder_prompt.py       — generate 15 Spanish/English pairs
+- grammar_checker_prompt.py    — generate 10 sentences with deliberate errors
+
+Each prompt: INPUT section, TASK, RULES, exact JSON schema, "return ONLY valid JSON" constraint.
+
+### 3. Create 4 field-agent classes in agents/review/
+Each follows TopicGenerator pattern exactly:
+- __init__(self, runner: Runner, model: ChatOllama) → create_agent(model, prompt)
+- generate(self, words: list[str]) -> TypedReview — format words, invoke, parse with retry (MAX_RETRIES=3)
+- JSON parse: model_validate_json() → regex fallback → fallback object
+
+Files: gap_filler.py, phrase_examiner.py, card_builder.py, grammar_checker.py, __init__.py
+
+### 4. Rewrite agents/reviewer.py — Coordinator
+- Constructor receives 4 injected field-agents
+- generate_review(review_type, words) -> ReviewResponse — dispatches to correct agent, wraps result
+
+### 5. Wire in core/build_tutor_core.py
+- 4 setup functions (one per field-agent), each with ChatOllama(model=QWEN25_7B_MODEL, format="json")
+  - GapFiller / GrammarChecker: temperature=0.7
+  - PhraseExaminer / CardBuilder: temperature=0.3
+- setup_reviewer(runner) → constructs all 4 and returns Reviewer
+- Pass Reviewer into TutorCore
+
+### 6. Add method to core/tutor_core.py
+- Accept reviewer: Reviewer in constructor
+- generate_review(review_type) -> ReviewResponse — gets vocabulary, delegates to reviewer
+
+### 7. Add endpoint in main.py
+- POST /review — accepts ReviewRequest, returns ReviewResponse
+
+## Files
+
+New (9):
+- agents/review/__init__.py
+- agents/review/gap_filler.py
+- agents/review/phrase_examiner.py
+- agents/review/card_builder.py
+- agents/review/grammar_checker.py
+- prompts/gap_filler_prompt.py
+- prompts/phrase_examiner_prompt.py
+- prompts/card_builder_prompt.py
+- prompts/grammar_checker_prompt.py
+
+Modified (5):
+- schemas/models.py
+- agents/reviewer.py
+- core/build_tutor_core.py
+- core/tutor_core.py
+- main.py
+
+## Verification
+1. Start server: uvicorn main:app --reload
+2. Hit POST /review with {"review_type": "fill_in_the_blank"} (and each other type)
+3. Verify response matches expected schema and contains sensible content
+4. Check /docs to confirm OpenAPI schema looks correct
