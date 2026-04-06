@@ -10,25 +10,35 @@ from app.utils.helpers import normalize_user_input
 
 class Vocabulary:
     def __init__(self):
-        self._words: set[str] | None = None
+        self._words: Set[str] | None = None
 
     @property
-    def words(self) -> set[str]:
+    def words(self) -> Set[str]:
         if self._words is None:
             self._words = self.load_vocabulary()
         return self._words
 
     # * Database operation
     def load_vocabulary(self) -> Set[str]:
-        response = get_supabase().table(Table.WORDS).select("*").execute()
+        response = (
+            get_supabase()
+            .table(Table.WORDS)
+            .select("*")
+            .execute()
+        )
+
         vocabulary = self.get_words_from_response(response)
         return vocabulary
 
     # * Database operation
     def update_max_episode_completed(self, episode: int) -> None:
-        get_supabase().table(Table.USERS).update({User.MAX_EPISODE: episode}).eq(
-            User.DISPLAY_NAME, "matus"
-        ).execute()
+        (
+        get_supabase()
+        .table(Table.USERS)
+        .update({User.MAX_EPISODE: episode})
+        .eq(User.DISPLAY_NAME, "matus")
+        .execute()
+        )
 
     # * Database operation
     def get_max_episode_completed(self) -> int:
@@ -44,15 +54,20 @@ class Vocabulary:
 
     # * Database operation
     def insert_word(self, word: str) -> None:
-        if word.strip() == "" or word is None:
+        if word is None or word.strip() == "":
             return
 
         payload = WordModel(word=word)
 
-        get_supabase().table(Table.WORDS).upsert(
-            payload.model_dump(),
+        (
+        get_supabase()
+        .table(Table.WORDS)
+        .upsert(
+            payload.model_dump(exclude_none=True),
             on_conflict="word"
-        ).execute()
+        )
+        .execute()
+        )
 
     def insert_all_words(self, words: Set[str]):
         for word in words:
@@ -67,8 +82,8 @@ class Vocabulary:
 
         return result
 
-    def find_new_words(self, used_words: set[str]) -> set[str]:
-        new_words: set[str] = set()
+    def find_new_words(self, used_words: Set[str]) -> Set[str]:
+        new_words: Set[str] = set()
 
         for word in used_words:
             if word not in self.words:
@@ -76,14 +91,12 @@ class Vocabulary:
 
         return new_words
 
-    def verify_new_words(
-        self, new_words: set[str], current_invalid: set[str]
-    ) -> set[str]:
+    def verify_new_words(self, new_words: Set[str], current_invalid: Set[str]) -> Set[str]:
         invalid_set = current_invalid
-        verified: set[str] = new_words.difference(invalid_set)
+        verified: Set[str] = new_words.difference(invalid_set)
         return verified
 
-    def verify_and_update_vocabulary(self, analysis: UserInputAnalysis) -> set[str]:
+    def verify_and_update_vocabulary(self, analysis: UserInputAnalysis) -> Set[str]:
         formatted_used_words = normalize_user_input(analysis.set_of_words)
         formatted_misused_words = normalize_user_input(analysis.misused_words)
 
@@ -127,3 +140,6 @@ class Vocabulary:
 #     print(todays_words)
 #     return todays_words
 
+if __name__ == "__main__":
+    vocab = Vocabulary()
+    vocab.insert_word("donde")

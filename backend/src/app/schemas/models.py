@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Literal
 from pydantic import BaseModel, Field
 from enum import Enum
@@ -28,7 +29,6 @@ class Language(str, Enum):
 class Table(str, Enum):
     USERS = "users"
     WORDS = "words"
-
     def __str__(self) -> str:
         return self.value
 
@@ -39,19 +39,17 @@ class User(str, Enum):
     MAX_EPISODE = "max_episode"
     LANGUAGE = "language"
     CREATED_AT = "created_at"
-
     def __str__(self) -> str:
         return self.value
 
 
 class Word(str, Enum):
     ID = "id"
-    USER_ID = "user_id"
     WORD = "word"
     TRANSLATION = "translation"
     IS_HIGH_FREQUENCY = "is_high_frequency"
     CREATED_AT = "created_at"
-
+    UPDATED_AT = "updated_at"
     def __str__(self) -> str:
         return self.value
 
@@ -60,6 +58,7 @@ class WordModel(BaseModel):
     word: str
     translation: str | None = Field(default=None)
     is_high_frequency: bool = Field(default=False)
+    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class UserModel(BaseModel):
