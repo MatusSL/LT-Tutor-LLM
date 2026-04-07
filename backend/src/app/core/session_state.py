@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Set
+from typing import List, Set
 
-from app.schemas.constants import History, LLMResponse
+from app.schemas.constants import Context, LLMResponse
 from app.schemas.db import Language
 
 
@@ -11,6 +11,6 @@ class SessionState:
     language: Language = Language.UNKNOWN
     response_json: LLMResponse = field(default_factory=dict)
     episodes_dir: Path = field(default_factory=Path)
-    history: History = field(default_factory=list)
+    context: List[Context] = field(default_factory=list)
     vocabulary: Set[str] = field(default_factory=set)
     is_finished: bool = False

@@ -1,5 +1,6 @@
 import json
 import re
+from typing import List, Set, Tuple
 
 from langchain_mistralai import ChatMistralAI
 from langchain_ollama import ChatOllama
@@ -7,7 +8,7 @@ from langchain.agents import create_agent
 
 from app.agents.runner import Runner
 from app.prompts.merged_tutor_prompt import MERGED_TUTOR_PROMPT
-from app.schemas.constants import History
+from app.schemas.constants import Context
 from app.schemas.db import Language
 from app.schemas.llm import TutorResponse
 
@@ -22,9 +23,9 @@ class Tutor:
         self.runner = runner
 
     def reply(
-        self, user_input: str, history: History, vocabulary: set[str]
-    ) -> tuple[str, TutorResponse]:
-        conversation = "\n".join(f"{m['role']}: {m['content']}" for m in history)
+        self, user_input: str, context: List[Context], vocabulary: Set[str]
+    ) -> Tuple[str, TutorResponse]:
+        conversation = "\n".join(f"{m.role}: {m.content}" for m in context)
 
         prompt = MERGED_TUTOR_PROMPT.format(
             vocabulary=vocabulary, history=conversation, user_input=user_input

@@ -1,25 +1,26 @@
 from pathlib import Path
 
-from app.agents.tutor import Tutor
-from app.agents.reviewer import Reviewer
-
+from app.schemas.constants import Context
+from app.schemas.protocols import (
+    TutorProtocol,
+    ReviewerProtocol,
+    VocabularyProtocol
+)
 from app.core.session_state import SessionState
 from app.core.session_manager import SessionManager
 
 from app.schemas.api import ChatResponse
 from app.schemas.db import Language, MistakeModel
-from app.schemas.llm import TutorResponse
+from app.schemas.llm import Correction, TutorResponse
 from app.schemas.session import UserInputAnalysis
-
-from app.services.vocabulary import Vocabulary
 
 
 class TutorCore:
     def __init__(
         self,
-        tutor: Tutor,
-        reviewer: Reviewer,
-        vocabulary: Vocabulary,
+        tutor: TutorProtocol,
+        reviewer: ReviewerProtocol,
+        vocabulary: VocabularyProtocol,
         episodes_dir: Path,
     ):
         self.tutor = tutor
@@ -28,58 +29,79 @@ class TutorCore:
         self.session_manager = SessionManager(episodes_dir)
         self.session_state = SessionState()
 
+
     def handle_message(self, user_input: str) -> ChatResponse:
         if len(self.session_state.vocabulary) == 0:
             self.session_state.vocabulary = self.vocabulary.words
 
-        reply, response_json = self.tutor.reply(
+        reply, response = self.tutor.reply(
             user_input=user_input,
-            history=self.session_state.history,
+            context=self.session_state.context,
             vocabulary=self.session_state.vocabulary,
         )
 
-        self.session_state.history.append({"role": "user", "content": user_input})
-        self.session_state.history.append({"role": "response", "content": reply})
-
-        self.session_state.language = response_json.input_language
-
+        self.add_messages_to_state(user_message=user_input, reply_message=reply)
+        
+        self.session_state.language = response.input_language
         if self.session_state.language == Language.UNKNOWN:
             return self.get_chat_response_fallback()
 
         if self.session_state.language == Language.SPANISH:
-            correction = response_json.correction
-            is_correct = correction is None
+            self.handle_spanish_input(response=response)
 
-            if is_correct or len(correction.error_candidates) == 1:
-                analysis = self.analyize_response(response_json)
-                verified_new_words = self.vocabulary.verify_and_update_vocabulary(
-                    analysis
-                )
-
-                self.session_state.vocabulary.update(verified_new_words)
-            
-            if correction is not None and len(correction.error_candidates) > 0:
-                for mistake in correction.error_candidates:
-                    distractions = self.reviewer.generate_distractions(
-                        word=mistake.word,
-                        sentence=correction.original
-                    )
-
-                    mistake_model = MistakeModel(
-                        origin=mistake.word,
-                        corrected=mistake.correction,
-                        sentence=correction.original,
-                        translation=mistake.translation,
-                        distractions=distractions
-                    )
-
-                    self.vocabulary.update_mistake(
-                        mistake=mistake_model
-                    )
-
-
-        return ChatResponse(response=reply, tutor_response=response_json)
+        return ChatResponse(response=reply, tutor_response=response)
     
+
+    def add_messages_to_state(self, user_message: str, reply_message: str) -> None:
+        self.session_state.context.extend([
+            Context(role="user", content=user_message),
+            Context(role="response", content=reply_message)
+        ])
+
+
+    def handle_spanish_input(self, response: TutorResponse) -> None:
+        correction = response.correction
+
+        if correction is None:
+            self.update_user_vocabulary(response=response)
+            return
+
+        error_count = len(correction.error_candidates)
+
+        if error_count <= 1:
+            self.update_user_vocabulary(response=response)
+
+        self.generate_review(correction=correction)
+
+
+    def generate_review(self, correction: Correction) -> None:
+        for mistake in correction.error_candidates:
+            distractions = self.reviewer.generate_distractions(
+                word=mistake.word,
+                sentence=correction.original
+            )
+
+            mistake_model = MistakeModel(
+                origin=mistake.word,
+                corrected=mistake.correction,
+                sentence=correction.original,
+                translation=mistake.translation,
+                distractions=distractions
+            )
+
+            self.vocabulary.update_mistake(
+                mistake=mistake_model
+            )
+
+
+    def update_user_vocabulary(self, response: TutorResponse):
+        analysis = self.analyize_response(response)
+        verified_new_words = self.vocabulary.verify_and_update_vocabulary(
+            analysis
+        )
+
+        self.session_state.vocabulary.update(verified_new_words)
+
 
     def analyize_response(self, tutor_response: TutorResponse) -> UserInputAnalysis:
         used_words = set(tutor_response.input_spanish.split())
