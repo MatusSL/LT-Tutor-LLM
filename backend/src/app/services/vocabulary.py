@@ -5,11 +5,12 @@ from postgrest import APIResponse
 from app.database.supabase_setup import get_supabase
 from app.schemas.db import MistakeModel, Table, User, UserModel, WordModel
 from app.schemas.session import UserInputAnalysis
+from app.schemas.protocols import VocabularyProtocol
 
 from app.utils.helpers import normalize_user_input
 
 
-class Vocabulary:
+class Vocabulary(VocabularyProtocol):
     def __init__(self):
         self._words: Set[str] | None = None
 
@@ -171,7 +172,3 @@ class Vocabulary:
 
 #     print(todays_words)
 #     return todays_words
-
-if __name__ == "__main__":
-    vocab = Vocabulary()
-    vocab.update_word("donde")

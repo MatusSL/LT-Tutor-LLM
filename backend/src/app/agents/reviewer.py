@@ -8,7 +8,7 @@ from langchain.agents import create_agent
 from app.agents.runner import Runner
 from app.schemas.db import DistractionModel, MistakeModel
 from app.schemas.review import BlankWord, ErrorCorrection, Flashcard, PhraseQuiz
-
+from app.schemas.protocols import ReviewerProtocol
 
 SYSTEM_PROMPT = """
 You are a Spanish language exercise designer specializing in distractor generation.
@@ -83,7 +83,7 @@ SENTENCE: {sentence}
 """
 
 
-class Reviewer:
+class Reviewer(ReviewerProtocol):
     def __init__(self, runner: Runner, model: ChatMistralAI) -> None:
         self.runner = runner
         self.agent = create_agent(model=model)

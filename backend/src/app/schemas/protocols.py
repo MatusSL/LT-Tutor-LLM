@@ -29,7 +29,7 @@ class TutorProtocol(Protocol):
             self,
             user_input: str,
             context: List[Context],
-            vocabulary: set[str]
+            vocabulary: Set[str]
         ) -> Tuple[str, TutorResponse]:
             ...
 
@@ -39,19 +39,10 @@ class VocabularyProtocol(Protocol):
     def words(self) -> Set[str]:
         ...
 
-    def load_vocabulary(self) -> Set[str]:
-        ...
-
     def update_max_episode_completed(self, episode: int) -> None:
         ...
 
     def get_max_episode_completed(self) -> int:
-        ...
-
-    def insert_word(self, word: str) -> None:
-        ...
-
-    def update_mistake(self, mistake: MistakeModel) -> None:
         ...
 
     def update_all_mistakes(self, mistakes: List[MistakeModel]) -> None:
@@ -60,7 +51,7 @@ class VocabularyProtocol(Protocol):
     def get_all_mistakes(self) -> List[MistakeModel]:
         ...
 
-    def insert_all_words(self, words: Set[str]) -> None:
+    def update_all_words(self, words: Set[str]) -> None:
         ...
 
     def verify_and_update_vocabulary(self, analysis: UserInputAnalysis) -> Set[str]:

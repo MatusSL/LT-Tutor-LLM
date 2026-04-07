@@ -11,13 +11,15 @@ from app.prompts.merged_tutor_prompt import MERGED_TUTOR_PROMPT
 from app.schemas.constants import Context
 from app.schemas.db import Language
 from app.schemas.llm import TutorResponse
+from app.schemas.protocols import TutorProtocol
+
 
 REPLY_DELIMITER = "---REPLY---"
 JSON_DELIMITER = "---JSON---"
 MAX_RETRIES = 3
 
 
-class Tutor:
+class Tutor(TutorProtocol):
     def __init__(self, runner: Runner, model: ChatOllama | ChatMistralAI) -> None:
         self.agent = create_agent(model=model)
         self.runner = runner
