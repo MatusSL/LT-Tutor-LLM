@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import List
+import threading
 
 from app.schemas.constants import Context
 from app.schemas.protocols import (
@@ -72,10 +73,11 @@ class TutorCore:
         if error_count <= 1:
             self.update_user_vocabulary(response=response)
 
-        self.generate_review(correction=correction)
+        thread = threading.Thread(target=self.update_error_words, args=(correction,), daemon=True)
+        thread.start()
 
 
-    def generate_review(self, correction: Correction) -> None:
+    def update_error_words(self, correction: Correction) -> None:
         mistake_models = self.get_mistake_models_for_correction(correction=correction)
         self.vocabulary.update_all_mistakes(mistakes=mistake_models)
     

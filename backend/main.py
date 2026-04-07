@@ -1,6 +1,8 @@
 import os
 import tempfile
 from pathlib import Path
+import random
+from typing import List
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,10 +13,15 @@ from app.schemas.api import (
     CurrentEpisodeResponse,
     EpisodeRequest,
     EpisodeResponse,
+    ReviewCorrectionResponse,
+    ReviewBlankResponse,
     HealthResponse,
+    ReviewFlashcardsResponse,
+    ReviewPhraseResponse,
     SavedEpisodeResponse,
     UserInput,
 )
+from app.schemas.db import MistakeModel
 from app.schemas.llm import Topics
 from app.services import stt_service, tts_service
 
@@ -99,3 +106,41 @@ def load_saved_episode():
 def get_current_episode():
     current_episode = tutor_core.vocabulary.get_max_episode_completed()
     return CurrentEpisodeResponse(episode=current_episode)
+
+
+def pick_random_n_mistakes(mistakes: List[MistakeModel], n: int) -> List[MistakeModel]:
+    if len(mistakes) <= n:
+        return mistakes[:]
+    return random.sample(mistakes, 15)
+
+
+@app.get("/review/flashcards", response_model=ReviewFlashcardsResponse)
+def get_flashcards_review() -> ReviewFlashcardsResponse:
+    mistakes = tutor_core.vocabulary.get_all_mistakes()
+    random_mistakes = pick_random_n_mistakes(mistakes=mistakes, n=15)
+    flashcards = tutor_core.reviewer.generate_flashcards(mistakes=random_mistakes)
+    return ReviewFlashcardsResponse(flashcards=flashcards)
+
+
+@app.get("/review/phrase-quiz", response_model=ReviewPhraseResponse)
+def get_phrase_quiz_review() -> ReviewPhraseResponse:
+    mistakes = tutor_core.vocabulary.get_all_mistakes()
+    random_mistakes = pick_random_n_mistakes(mistakes=mistakes, n=10)
+    phrase_quiz = tutor_core.reviewer.generate_phrase_quiz(mistakes=random_mistakes)
+    return ReviewPhraseResponse(phrase_quiz=phrase_quiz)
+
+
+@app.get("/review/fill-in-the-blank", response_model=ReviewBlankResponse)
+def get_fill_in_the_blank_review() -> ReviewBlankResponse:
+    mistakes = tutor_core.vocabulary.get_all_mistakes()
+    random_mistakes = pick_random_n_mistakes(mistakes=mistakes, n=10)
+    blank_words = tutor_core.reviewer.generate_fill_in_the_blank(mistakes=random_mistakes)
+    return ReviewBlankResponse(blank_words=blank_words)
+
+
+@app.get("/review/error-correction", response_model=ReviewCorrectionResponse)
+def get_error_correction_review() -> ReviewCorrectionResponse:
+    mistakes = tutor_core.vocabulary.get_all_mistakes()
+    random_mistakes = pick_random_n_mistakes(mistakes=mistakes, n=10)
+    error_corrections = tutor_core.reviewer.generate_error_correction(mistakes=random_mistakes)
+    return ReviewCorrectionResponse(error_corrections=error_corrections)
