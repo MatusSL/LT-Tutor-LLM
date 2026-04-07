@@ -4,7 +4,7 @@ import pytest
 
 from app.core.tutor_core import TutorCore
 from app.schemas.api import ChatResponse
-from app.schemas.db import Language
+from app.schemas.db import DistractionModel, Language
 from app.schemas.llm import Correction, ErrorCandidate
 from app.schemas.llm import TutorResponse
 
@@ -36,6 +36,7 @@ def make_correction(
         errors = [
             ErrorCandidate(
                 word="soy",
+                translation="I am (permanent)",
                 span=[3, 6],
                 error_type="grammar",
                 correction="estoy",
@@ -49,15 +50,16 @@ def make_correction(
 def core(tmp_path) -> TutorCore:
     """TutorCore with all dependencies mocked."""
     mock_tutor = MagicMock()
-    mock_topic_generator = MagicMock()
-    mock_word_recommender = MagicMock()
+    mock_reviewer = MagicMock()
     mock_vocabulary = MagicMock()
     mock_vocabulary.words = {"yo", "hola", "bien"}
+    mock_reviewer.generate_distractions.return_value = DistractionModel(
+        phrase=[], blank=[], correction=""
+    )
 
     return TutorCore(
         tutor=mock_tutor,
-        topic_generator=mock_topic_generator,
-        word_recommender=mock_word_recommender,
+        reviewer=mock_reviewer,
         vocabulary=mock_vocabulary,
         episodes_dir=tmp_path,
     )
@@ -75,6 +77,7 @@ class TestAnalyizeResponse:
             errors=[
                 ErrorCandidate(
                     word="soy",
+                    translation="I am (permanent)",
                     span=[3, 6],
                     error_type="grammar",
                     correction="estoy",
@@ -92,6 +95,7 @@ class TestAnalyizeResponse:
             errors=[
                 ErrorCandidate(
                     word="una",
+                    translation="a (feminine)",
                     span=[0, 3],
                     error_type="agreement",
                     correction="un",
@@ -99,6 +103,7 @@ class TestAnalyizeResponse:
                 ),
                 ErrorCandidate(
                     word="problema",
+                    translation="problem",
                     span=[4, 12],
                     error_type="vocabulary",
                     correction="error",
@@ -119,58 +124,6 @@ class TestAnalyizeResponse:
         assert analysis.set_of_words == set()
         assert analysis.misused_words == set()
 
-
-class TestGetExplanations:
-    def test_no_correction_returns_empty_list(self, core):
-        resp = make_tutor_response()
-        assert core.get_explanations_from_analysis(resp) == []
-
-    def test_single_explanation_extracted(self, core):
-        correction = make_correction(
-            errors=[
-                ErrorCandidate(
-                    word="soy",
-                    span=[3, 6],
-                    error_type="grammar",
-                    correction="estoy",
-                    explanation="Use 'estoy' not 'soy' for conditions.",
-                )
-            ]
-        )
-        resp = make_tutor_response(correction=correction)
-        explanations = core.get_explanations_from_analysis(resp)
-        assert len(explanations) == 1
-        assert "estoy" in explanations[0]
-
-    def test_multiple_explanations_all_returned(self, core):
-        correction = make_correction(
-            errors=[
-                ErrorCandidate(
-                    word="a",
-                    span=[0, 1],
-                    error_type="grammar",
-                    correction="b",
-                    explanation="Explanation A",
-                ),
-                ErrorCandidate(
-                    word="c",
-                    span=[2, 3],
-                    error_type="spelling",
-                    correction="d",
-                    explanation="Explanation B",
-                ),
-            ]
-        )
-        resp = make_tutor_response(correction=correction)
-        explanations = core.get_explanations_from_analysis(resp)
-        assert len(explanations) == 2
-        assert any("A" in e for e in explanations)
-        assert any("B" in e for e in explanations)
-
-    def test_returns_empty_for_correction_with_no_candidates(self, core):
-        correction = Correction(original="x", corrected="y", error_candidates=[])
-        resp = make_tutor_response(correction=correction)
-        assert core.get_explanations_from_analysis(resp) == []
 
 
 class TestGetChatResponseFallback:
@@ -220,9 +173,9 @@ class TestHandleMessage:
     def test_history_updated_after_message(self, core):
         self._setup_tutor_reply(core, "hola")
         core.handle_message("hola")
-        assert len(core.session_state.history) == 2
-        assert core.session_state.history[0]["role"] == "user"
-        assert core.session_state.history[0]["content"] == "hola"
+        assert len(core.session_state.context) == 2
+        assert core.session_state.context[0].role == "user"
+        assert core.session_state.context[0].content == "hola"
 
     def test_vocabulary_updated_when_correct_spanish(self, core):
         self._setup_tutor_reply(core, "estoy bien", Language.SPANISH, correction=None)
@@ -247,6 +200,7 @@ class TestHandleMessage:
             errors=[
                 ErrorCandidate(
                     word="a",
+                    translation="a (example)",
                     span=[0, 1],
                     error_type="grammar",
                     correction="b",
@@ -254,6 +208,7 @@ class TestHandleMessage:
                 ),
                 ErrorCandidate(
                     word="c",
+                    translation="c (example)",
                     span=[2, 3],
                     error_type="grammar",
                     correction="d",
@@ -272,6 +227,7 @@ class TestHandleMessage:
             errors=[
                 ErrorCandidate(
                     word="soy",
+                    translation="I am (permanent)",
                     span=[3, 6],
                     error_type="grammar",
                     correction="estoy",

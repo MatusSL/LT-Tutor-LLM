@@ -184,9 +184,10 @@ Pues, deberías decir 'estoy bien'.
     "error_candidates": [
       {
         "word": "soy",
+        "translation": "I am (permanent)",
         "span": [3, 6],
         "error_type": "grammar",
-        "suggested_correction": "estoy",
+        "correction": "estoy",
         "explanation": "Use 'estoy' for temporary states like health."
       }
     ]
@@ -212,7 +213,7 @@ class TestParseMergedResponse:
         assert resp.correction.corrected == "yo estoy bien"
         assert len(resp.correction.error_candidates) == 1
         assert resp.correction.error_candidates[0].word == "soy"
-        assert resp.correction.error_candidates[0].suggested_correction == "estoy"
+        assert resp.correction.error_candidates[0].correction == "estoy"
 
     def test_parses_bilingual_fields(self, tutor):
         _, resp = tutor.parse_merged_response(
