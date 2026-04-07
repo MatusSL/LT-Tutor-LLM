@@ -54,7 +54,7 @@ class Vocabulary:
         return UserModel.model_validate(response.data[0]).max_episode
 
     # * Database operation
-    def insert_word(self, word: str) -> None:
+    def update_word(self, word: str) -> None:
         if word is None or word.strip() == "":
             return
 
@@ -86,7 +86,9 @@ class Vocabulary:
         )
 
     # * Database operation
-    # def update_all_mistakes(self)
+    def update_all_mistakes(self, mistakes: List[MistakeModel]) -> None:
+        for mistake in mistakes:
+            self.update_mistake(mistake)
 
 
     # * Database operation
@@ -101,9 +103,9 @@ class Vocabulary:
         return [MistakeModel.model_validate(row) for row in response.data]
 
     # * Database operation
-    def insert_all_words(self, words: Set[str]):
+    def update_all_words(self, words: Set[str]):
         for word in words:
-            self.insert_word(word)
+            self.update_word(word)
 
     def get_words_from_response(self, response: APIResponse) -> Set[str]:
         result: Set[str] = set()
@@ -136,7 +138,7 @@ class Vocabulary:
         verified_words = self.verify_new_words(new_words, formatted_misused_words)
         # self.words.update(verified_words)
 
-        self.insert_all_words(verified_words)
+        self.update_all_words(verified_words)
         return verified_words
 
 
@@ -172,4 +174,4 @@ class Vocabulary:
 
 if __name__ == "__main__":
     vocab = Vocabulary()
-    vocab.insert_word("donde")
+    vocab.update_word("donde")

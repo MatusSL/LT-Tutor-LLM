@@ -59,7 +59,7 @@ class TestVerifyNewWords:
 class TestVerifyAndUpdateVocabulary:
     def test_returns_genuinely_new_correctly_used_words(self, vocab):
         vocab._words = {"yo"}
-        with patch.object(vocab, "insert_all_words"):
+        with patch.object(vocab, "update_all_words"):
             analysis = UserInputAnalysis(
                 set_of_words={"yo", "hablar", "comer"},
                 misused_words={"comer"},
@@ -69,7 +69,7 @@ class TestVerifyAndUpdateVocabulary:
 
     def test_returns_empty_when_all_words_already_known(self, vocab):
         vocab._words = {"yo", "hablar"}
-        with patch.object(vocab, "insert_all_words"):
+        with patch.object(vocab, "update_all_words"):
             analysis = UserInputAnalysis(
                 set_of_words={"yo", "hablar"},
                 misused_words=set(),
@@ -79,7 +79,7 @@ class TestVerifyAndUpdateVocabulary:
 
     def test_returns_empty_when_all_new_words_are_misused(self, vocab):
         vocab._words = set()
-        with patch.object(vocab, "insert_all_words"):
+        with patch.object(vocab, "update_all_words"):
             analysis = UserInputAnalysis(
                 set_of_words={"soy", "bien"},
                 misused_words={"soy", "bien"},
@@ -89,7 +89,7 @@ class TestVerifyAndUpdateVocabulary:
 
     def test_normalizes_casing_before_lookup(self, vocab):
         vocab._words = {"yo"}
-        with patch.object(vocab, "insert_all_words"):
+        with patch.object(vocab, "update_all_words"):
             analysis = UserInputAnalysis(
                 set_of_words={"YO", "HABLAR"},
                 misused_words=set(),
@@ -100,7 +100,7 @@ class TestVerifyAndUpdateVocabulary:
 
     def test_normalizes_punctuation_before_lookup(self, vocab):
         vocab._words = set()
-        with patch.object(vocab, "insert_all_words"):
+        with patch.object(vocab, "update_all_words"):
             analysis = UserInputAnalysis(
                 set_of_words={"hola!", "¿qué?"},
                 misused_words=set(),
@@ -110,7 +110,7 @@ class TestVerifyAndUpdateVocabulary:
 
     def test_calls_insert_all_words(self, vocab):
         vocab._words = set()
-        with patch.object(vocab, "insert_all_words") as mock_insert:
+        with patch.object(vocab, "update_all_words") as mock_insert:
             analysis = UserInputAnalysis(
                 set_of_words={"soy"},
                 misused_words={"soy"},

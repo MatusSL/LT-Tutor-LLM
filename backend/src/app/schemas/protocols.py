@@ -54,7 +54,8 @@ class VocabularyProtocol(Protocol):
     def update_mistake(self, mistake: MistakeModel) -> None:
         ...
 
-    # def update_all_mistakes(self)
+    def update_all_mistakes(self, mistakes: List[MistakeModel]) -> None:
+        ...
 
     def get_all_mistakes(self) -> List[MistakeModel]:
         ...

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 from app.schemas.constants import Context
 from app.schemas.protocols import (
@@ -75,6 +76,13 @@ class TutorCore:
 
 
     def generate_review(self, correction: Correction) -> None:
+        mistake_models = self.get_mistake_models_for_correction(correction=correction)
+        self.vocabulary.update_all_mistakes(mistakes=mistake_models)
+    
+
+    def get_mistake_models_for_correction(self, correction: Correction) -> List[MistakeModel]:
+        mistake_models: List[MistakeModel] = []
+        
         for mistake in correction.error_candidates:
             distractions = self.reviewer.generate_distractions(
                 word=mistake.word,
@@ -89,9 +97,9 @@ class TutorCore:
                 distractions=distractions
             )
 
-            self.vocabulary.update_mistake(
-                mistake=mistake_model
-            )
+            mistake_models.append(mistake_model)
+        
+        return mistake_models
 
 
     def update_user_vocabulary(self, response: TutorResponse):
@@ -111,7 +119,6 @@ class TutorCore:
             return UserInputAnalysis(set_of_words=used_words, misused_words=set())
 
         misused_words: set[str] = set()
-
         for error_candidate in correction.error_candidates:
             candidate_word = error_candidate.word
             misused_words.add(candidate_word)
