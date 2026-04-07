@@ -35,7 +35,7 @@ def health_check():
     return HealthResponse(status="ok")
 
 
-tutor_core.handle_message(user_input="Te voy a digo algo nuevo!")
+# tutor_core.handle_message(user_input="Te voy a hablar algo nuevo!")
 
 
 @app.post("/chat", response_model=ChatResponse)

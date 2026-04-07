@@ -1,14 +1,13 @@
 from pathlib import Path
 
 from app.agents.tutor import Tutor
-from app.agents.topic_generator import TopicGenerator
-from app.agents.word_recommender import WordRecommender
+from app.agents.reviewer import Reviewer
 
 from app.core.session_state import SessionState
 from app.core.session_manager import SessionManager
 
 from app.schemas.api import ChatResponse
-from app.schemas.db import Language
+from app.schemas.db import Language, MistakeModel
 from app.schemas.llm import TutorResponse
 from app.schemas.session import UserInputAnalysis
 
@@ -19,21 +18,18 @@ class TutorCore:
     def __init__(
         self,
         tutor: Tutor,
-        topic_generator: TopicGenerator,
-        word_recommender: WordRecommender,
+        reviewer: Reviewer,
         vocabulary: Vocabulary,
         episodes_dir: Path,
     ):
         self.tutor = tutor
         self.vocabulary = vocabulary
-        self.topic_generator = topic_generator
-        self.word_recommender = word_recommender
+        self.reviewer = reviewer
         self.session_manager = SessionManager(episodes_dir)
         self.session_state = SessionState()
 
     def handle_message(self, user_input: str) -> ChatResponse:
         if len(self.session_state.vocabulary) == 0:
-            # User didn't update completed episodes UI
             self.session_state.vocabulary = self.vocabulary.words
 
         reply, response_json = self.tutor.reply(
@@ -64,13 +60,26 @@ class TutorCore:
             
             if correction is not None and len(correction.error_candidates) > 0:
                 for mistake in correction.error_candidates:
-                    self.vocabulary.insert_mistake(
-                        error=mistake,
+                    distractions = self.reviewer.generate_distractions(
+                        word=mistake.word,
                         sentence=correction.original
+                    )
+
+                    mistake_model = MistakeModel(
+                        origin=mistake.word,
+                        corrected=mistake.correction,
+                        sentence=correction.original,
+                        translation=mistake.translation,
+                        distractions=distractions
+                    )
+
+                    self.vocabulary.update_mistake(
+                        mistake=mistake_model
                     )
 
 
         return ChatResponse(response=reply, tutor_response=response_json)
+    
 
     def analyize_response(self, tutor_response: TutorResponse) -> UserInputAnalysis:
         used_words = set(tutor_response.input_spanish.split())

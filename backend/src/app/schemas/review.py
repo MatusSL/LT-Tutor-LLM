@@ -12,5 +12,15 @@ class BlankWord:
 
 @dataclass
 class Flashcard:
-    word: str
+    origin: str
     translation: str
+
+@dataclass
+class PhraseQuiz:
+    correct: str
+    wrong: List[str]
+
+@dataclass
+class ErrorCorrection:
+    sentence: str
+    wrong_word: str

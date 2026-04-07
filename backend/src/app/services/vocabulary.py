@@ -4,7 +4,6 @@ from postgrest import APIResponse
 
 from app.database.supabase_setup import get_supabase
 from app.schemas.db import MistakeModel, Table, User, UserModel, WordModel
-from app.schemas.llm import ErrorCandidate
 from app.schemas.session import UserInputAnalysis
 
 from app.utils.helpers import normalize_user_input
@@ -72,29 +71,23 @@ class Vocabulary:
         )
 
     # * Database operation
-    def insert_mistake(self, error: ErrorCandidate, sentence: str) -> None:
-        if error.word is None or error.word.strip() == "":
+    def update_mistake(self, mistake: MistakeModel) -> None:
+        if mistake.origin is None or mistake.origin.strip() == "":
             return
-
-        distractions = {}
-
-        payload = MistakeModel(
-            origin=error.word,
-            corrected=error.correction,
-            sentence=sentence,
-            translation=error.translation,
-            distractions=distractions
-        )
 
         (
         get_supabase()
         .table(Table.MISTAKES)
         .upsert(
-            payload.model_dump(exclude_none=True),
+            mistake.model_dump(exclude_none=True),
             on_conflict="origin"
         )
         .execute()
         )
+
+    # * Database operation
+    # def update_all_mistakes(self)
+
 
     # * Database operation
     def get_all_mistakes(self) -> List[MistakeModel]:
@@ -107,6 +100,7 @@ class Vocabulary:
 
         return [MistakeModel.model_validate(row) for row in response.data]
 
+    # * Database operation
     def insert_all_words(self, words: Set[str]):
         for word in words:
             self.insert_word(word)
@@ -138,13 +132,11 @@ class Vocabulary:
         formatted_used_words = normalize_user_input(analysis.set_of_words)
         formatted_misused_words = normalize_user_input(analysis.misused_words)
 
-        # self.update_misused_words(formatted_misused_words)
-
         new_words = self.find_new_words(formatted_used_words)
         verified_words = self.verify_new_words(new_words, formatted_misused_words)
         # self.words.update(verified_words)
 
-        # self.insert_all_words(verified_words)
+        self.insert_all_words(verified_words)
         return verified_words
 
 

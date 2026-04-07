@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, List, Literal
+from typing import List, Literal
 from pydantic import BaseModel, Field
 from enum import Enum
 
@@ -65,16 +65,23 @@ class WordModel(BaseModel):
 
 type DistractionType = Literal["flashcards", "quiz", "phrase", "blank"]
 
+
+class UserModel(BaseModel):
+    display_name: str
+    max_episode: int = Field(default=1, ge=0)
+    language: Language
+
+
+class DistractionModel(BaseModel):
+    phrase: List[str]
+    blank: List[str]
+    correction: str
+
+
 class MistakeModel(BaseModel):
     origin: str
     corrected: str
     sentence: str
     translation: str
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    distractions: Dict[DistractionType, List[str]]
-
-
-class UserModel(BaseModel):
-    display_name: str
-    max_episode: int = Field(default=1, ge=0)
-    language: Language
+    distractions: DistractionModel
