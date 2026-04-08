@@ -3,7 +3,6 @@ import re
 from typing import List, Set, Tuple
 
 from langchain_mistralai import ChatMistralAI
-from langchain_ollama import ChatOllama
 from langchain.agents import create_agent
 
 from app.agents.runner import Runner
@@ -20,7 +19,7 @@ MAX_RETRIES = 3
 
 
 class Tutor(TutorProtocol):
-    def __init__(self, runner: Runner, model: ChatOllama | ChatMistralAI) -> None:
+    def __init__(self, runner: Runner, model: ChatMistralAI) -> None:
         self.agent = create_agent(model=model)
         self.runner = runner
 

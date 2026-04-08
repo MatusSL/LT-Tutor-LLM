@@ -1,26 +1,27 @@
-from dataclasses import dataclass
 from typing import List
 
+from pydantic import BaseModel
 
-@dataclass
-class BlankWord:
-    origin: str
-    corrected: str
+
+class PhraseQuiz(BaseModel):
+    phrase: str
+    correct_answer: str
+    options: List[str]
+
+class FillBlank(BaseModel):
     sentence: str
-    error_candidates: List[str]
+    blank_index: int
+    correct_word: str
+    options: List[str]
+    translation: str
 
-
-@dataclass
-class Flashcard:
+class Flashcard(BaseModel):
     origin: str
     translation: str
 
-@dataclass
-class PhraseQuiz:
-    correct: str
-    wrong: List[str]
-
-@dataclass
-class ErrorCorrection:
+class ErrorCorrection(BaseModel):
     sentence: str
-    wrong_word: str
+    error_index: int
+    corrected_word: str
+    error_type: str
+    explanation: str

@@ -55,6 +55,49 @@ export type TutorApiChatResponse = {
   response_audio: string | null;
 };
 
+export type BlankWord = {
+    sentence: string
+    blank_index: number
+    correct_word: string
+    options: string[]
+    translation: string
+}
+
+export type Flashcard = {
+    origin: string
+    translation: string
+}
+
+export type PhraseQuiz = {
+    phrase: string,
+    correct_answer: string
+    options: string[]
+}
+
+export type ErrorCorrection = {
+    sentence: string
+    error_index: number
+    corrected_word: string
+    error_type: string
+    explanation: string
+}
+
+export type ReviewFlashcardsResponse = {
+    flashcards: Flashcard[]
+}
+
+export type ReviewPhraseResponse = {
+    phrase_quiz: PhraseQuiz[]
+}
+
+export type ReviewBlankResponse = {
+    blank_words: BlankWord[]
+}
+
+export type ReviewCorrectionResponse = {
+    error_corrections: ErrorCorrection[]
+}
+
 const requestJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(getApiUrl(path), {
     headers: {
@@ -140,3 +183,23 @@ export const transcribeAudio = async (audioUri: string): Promise<string> => {
   const data = (await response.json()) as { text: string };
   return data.text;
 };
+
+export const requestFlashcards = () => 
+  requestJson<ReviewFlashcardsResponse>("/review/flashcards", {
+    method: "GET"
+  })
+
+export const requestPhraseQuiz = () => 
+  requestJson<ReviewPhraseResponse>("/review/phrase-quiz", {
+    method: "GET"
+  })
+
+export const requestFillInTheBlank = () => 
+  requestJson<ReviewBlankResponse>("/review/fill-in-the-blank", {
+    method: "GET"
+  })
+
+export const requestErrorCorrection = () =>
+  requestJson<ReviewCorrectionResponse>("/review/error/correction", {
+    method: "GET"
+  })

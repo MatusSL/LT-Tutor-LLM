@@ -7,79 +7,82 @@ from langchain.agents import create_agent
 
 from app.agents.runner import Runner
 from app.schemas.db import DistractionModel, MistakeModel
-from app.schemas.review import BlankWord, ErrorCorrection, Flashcard, PhraseQuiz
+from app.schemas.review import FillBlank, ErrorCorrection, Flashcard, PhraseQuiz
 from app.schemas.protocols import ReviewerProtocol
 
 SYSTEM_PROMPT = """
-You are a Spanish language exercise designer specializing in distractor generation.
+You are a Spanish language exercise designer. A learner made a mistake using the word WORD inside SENTENCE.
 
-Your task is to generate exercise content for a given Spanish word across three review exercise types.
+Your job is to generate three review exercises based on that mistake. Return ONLY valid JSON — no markdown, no explanation, no extra text.
 
 --------------------------------------------------
 
 INPUT
 
-You will receive:
-- WORD: a single Spanish word that a learner has struggled with
-- SENTENCE: the sentence in which the learner made a mistake with this word
+WORD: {word}
+SENTENCE: {sentence}
 
 --------------------------------------------------
 
-TASK
+EXERCISES
 
-Generate content for each review method exactly as described:
+1. phrase_quiz — the learner translates the corrected sentence into English
 
-- phrase: 3 complete English sentences that naturally but incorrectly translate the sentence
-- blank: 3 real Spanish words that are plausible but WRONG substitutes for the target word in a fill-in-the-blank exercise
-- correction: 1 real Spanish word that could replace the target word in the given sentence — it fits grammatically and plausibly, but is the WRONG choice
+   - phrase: The corrected Spanish sentence (fix WORD to its correct form)
+   - correct_answer: The correct English translation of that corrected sentence
+   - options: Array of exactly 4 English sentences — correct_answer first, then 3 wrong translations that are plausible but change the meaning, are subtly off, or use similar-sounding phrases
+
+2. fill_blank — the learner picks the missing word
+
+   - sentence: The corrected Spanish sentence with the correct form of WORD replaced by ____ (e.g. "Te voy a ____ algo")
+   - blank_index: 0-based index of ____ when the sentence is split by spaces (e.g. "Te voy a ____ algo" → index 3)
+   - correct_word: The correct Spanish word that fills the blank (the correct form of WORD)
+   - options: Array of exactly 4 Spanish words — correct_word first, then 3 wrong words that are the same part of speech, common vocabulary, and plausible wrong choices
+   - translation: English translation of the full corrected sentence
+
+3. correction — the learner finds the error in the original sentence
+
+   - sentence: The ORIGINAL incorrect sentence exactly as given in SENTENCE — do not fix it
+   - error_index: 0-based index of WORD when the sentence is split by spaces
+   - corrected_word: The correct form of WORD (what it should have been)
+   - error_type: One of exactly "grammar", "agreement", or "vocabulary"
+   - explanation: 1-2 sentences explaining why WORD is wrong and what corrected_word is correct
 
 --------------------------------------------------
 
 RULES
 
-- Every word in blank and correction must be a real Spanish word
-- Every word in blank and correction must match the part of speech of the input word
-- Distractors must be plausible enough to trick a learner — not obviously wrong
-- Do NOT repeat the input word as a distractor
-- Do NOT use obscure or rare vocabulary — use common learner-level words
-- phrase must contain exactly 3 sentences
-- blank must contain exactly 3 words
-- correction must be exactly 1 word (a string, not a list)
+- options in fill_blank must all be real Spanish words matching the part of speech of correct_word
+- options in phrase_quiz must all be grammatically complete English sentences
+- No distractor may repeat WORD or corrected_word
+- Do not use obscure vocabulary — use common learner-level words
+- Output must be pure JSON with no markdown fences
 
 --------------------------------------------------
 
 OUTPUT FORMAT
 
-Return ONLY valid JSON, nothing else:
-
 {{
-    "phrase": ["sentence1", "sentence2", "sentence3"],
-    "blank": ["wrong1", "wrong2", "wrong3"],
-    "correction": "wrong_word"
+    "phrase_quiz": {{
+        "phrase": "<corrected Spanish sentence>",
+        "correct_answer": "<correct English translation>",
+        "options": ["<correct_answer>", "<wrong1>", "<wrong2>", "<wrong3>"]
+    }},
+    "fill_blank": {{
+        "sentence": "<corrected sentence with ____ replacing the target word>",
+        "blank_index": <int>,
+        "correct_word": "<correct Spanish word>",
+        "options": ["<correct_word>", "<wrong1>", "<wrong2>", "<wrong3>"],
+        "translation": "<English translation of corrected sentence>"
+    }},
+    "correction": {{
+        "sentence": "<original incorrect sentence>",
+        "error_index": <int>,
+        "corrected_word": "<correct form>",
+        "error_type": "<grammar|agreement|vocabulary>",
+        "explanation": "<why WORD is wrong and corrected_word is right>"
+    }}
 }}
-
---------------------------------------------------
-
-ADDITIONAL RULES
-
-- Do not include explanations
-- Do not include markdown
-- Do not include any text outside the JSON
-
---------------------------------------------------
-
-FINAL CHECK
-
-Before responding:
-- phrase has exactly 3 full sentences
-- blank has exactly 3 single words
-- correction is a single word string (not a list) that could substitute the input word in the sentence
-- no distractor repeats the input word
-- output is valid JSON
-
---------------------------------------------------
-WORD: {word}
-SENTENCE: {sentence}
 """
 
 
@@ -109,33 +112,17 @@ class Reviewer(ReviewerProtocol):
     
     def generate_phrase_quiz(self, mistakes: List[MistakeModel]) -> List[PhraseQuiz]:
         phrase_quiz: List[PhraseQuiz] = []
-
         for mistake in mistakes:
-            correct = mistake.sentence.replace(mistake.origin, mistake.corrected)
-
-            phrase = PhraseQuiz(
-                correct=correct,
-                wrong=[s for s in mistake.distractions.phrase]
-            )
-
-            phrase_quiz.append(phrase)
+            phrase_data = mistake.distractions.phrase_quiz
+            phrase_quiz.append(phrase_data)
 
         return phrase_quiz
     
-    def generate_fill_in_the_blank(self, mistakes: List[MistakeModel]) -> List[BlankWord]:
-        blanks_words: List[BlankWord] = []
+    def generate_fill_in_the_blank(self, mistakes: List[MistakeModel]) -> List[FillBlank]:
+        blanks_words: List[FillBlank] = []
 
         for mistake in mistakes:
-            underscores = "_" * len(mistake.corrected)
-            title_sentence = mistake.sentence.replace(mistake.origin, underscores)
-            
-            blank_word = BlankWord(
-                mistake.origin,
-                corrected=mistake.corrected,
-                sentence=title_sentence,
-                error_candidates=[s for s in mistake.distractions.blank][:2]
-            )
-
+            blank_word = mistake.distractions.fill_blank
             blanks_words.append(blank_word)
 
         return blanks_words
@@ -144,11 +131,7 @@ class Reviewer(ReviewerProtocol):
         error_corrections: List[ErrorCorrection] = []
 
         for mistake in mistakes:
-            correction = ErrorCorrection(
-                sentence=mistake.sentence,
-                wrong_word=mistake.origin
-            )
-
+            correction = mistake.distractions.correction
             error_corrections.append(correction)
         
         return error_corrections

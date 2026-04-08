@@ -73,8 +73,9 @@ class TutorCore:
         if error_count <= 1:
             self.update_user_vocabulary(response=response)
 
-        thread = threading.Thread(target=self.update_error_words, args=(correction,), daemon=True)
-        thread.start()
+        # thread = threading.Thread(target=self.update_error_words, args=(correction,), daemon=True)
+        # thread.start()
+        self.update_error_words(correction=correction)      #? Debugging purposes
 
 
     def update_error_words(self, correction: Correction) -> None:

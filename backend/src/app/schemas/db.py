@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
-from typing import List, Literal
+from typing import Literal
 from pydantic import BaseModel, Field
 from enum import Enum
+
+from app.schemas.review import ErrorCorrection, FillBlank, PhraseQuiz
 
 
 class Language(str, Enum):
@@ -73,9 +75,9 @@ class UserModel(BaseModel):
 
 
 class DistractionModel(BaseModel):
-    phrase: List[str]
-    blank: List[str]
-    correction: str
+    phrase_quiz: PhraseQuiz
+    fill_blank: FillBlank
+    correction: ErrorCorrection
 
 
 class MistakeModel(BaseModel):

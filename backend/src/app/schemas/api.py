@@ -3,7 +3,7 @@ from typing import List
 from pydantic import BaseModel
 
 from app.schemas.llm import TutorResponse, Topics
-from app.schemas.review import BlankWord, ErrorCorrection, Flashcard, PhraseQuiz
+from app.schemas.review import FillBlank, ErrorCorrection, Flashcard, PhraseQuiz
 
 
 class UserInput(BaseModel):
@@ -49,7 +49,7 @@ class ReviewPhraseResponse(BaseModel):
 
 
 class ReviewBlankResponse(BaseModel):
-    blank_words: List[BlankWord]
+    blank_words: List[FillBlank]
 
 
 class ReviewCorrectionResponse(BaseModel):

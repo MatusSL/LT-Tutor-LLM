@@ -172,3 +172,6 @@ class Vocabulary(VocabularyProtocol):
 
 #     print(todays_words)
 #     return todays_words
+
+if __name__ == "__main__":
+    print(Vocabulary().get_all_mistakes())
