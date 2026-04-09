@@ -13,8 +13,8 @@ class Runner:
             content = self.extract_content(response)
             return content
 
-        except Exception:
-            return ""
+        except Exception as exc:
+            raise RuntimeError(f"Error running agent: {exc}") from exc
 
     def extract_content(self, response: LLMResponse) -> str:
         last_message = response["messages"][-1]

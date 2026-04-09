@@ -1,9 +1,7 @@
 from datetime import datetime, timezone
-from typing import Literal
+from typing import List, Literal
 from pydantic import BaseModel, Field
 from enum import Enum
-
-from app.schemas.review import ErrorCorrection, FillBlank, PhraseQuiz
 
 
 class Language(str, Enum):
@@ -67,18 +65,44 @@ class WordModel(BaseModel):
 
 type DistractionType = Literal["flashcards", "quiz", "phrase", "blank"]
 
-
 class UserModel(BaseModel):
     display_name: str
     max_episode: int = Field(default=1, ge=0)
     language: Language
 
+class PhraseQuiz(BaseModel):
+    phrase: str
+    correct_answer: str
+    options: List[str]
+
+class FillBlank(BaseModel):
+    sentence: str
+    blank_index: int
+    correct_word: str
+    options: List[str]
+    translation: str
+
+class Flashcard(BaseModel):
+    origin: str
+    translation: str
+
+class ErrorCorrection(BaseModel):
+    sentence: str
+    error_index: int
+    corrected_word: str
+    error_type: str
+    explanation: str
+
+class ReviewData(BaseModel):
+    flashcards: List[Flashcard]
+    phrase_quiz: List[PhraseQuiz]
+    blank_words: List[FillBlank]
+    error_corrections: List[ErrorCorrection]
 
 class DistractionModel(BaseModel):
     phrase_quiz: PhraseQuiz
     fill_blank: FillBlank
     correction: ErrorCorrection
-
 
 class MistakeModel(BaseModel):
     origin: str
@@ -87,3 +111,4 @@ class MistakeModel(BaseModel):
     translation: str
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     distractions: DistractionModel
+

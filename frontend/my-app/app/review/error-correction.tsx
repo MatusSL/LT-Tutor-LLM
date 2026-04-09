@@ -8,7 +8,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { ErrorCorrection } from "@/services/tutor-api";
 
 const C = {
   bg: "#0F0F13",
@@ -25,105 +26,35 @@ const C = {
 };
 
 type ErrorQuestion = {
-  words: string[];
-  errorIndex: number;
-  correctedWord: string;
-  errorType: string;
-  explanation: string;
-};
+  sentence: string,
+  errorIndex: number,
+  correctedWord: string,
+  errorType: string,
+  explanation: string
 
-const MOCK_QUESTIONS: ErrorQuestion[] = [
-  {
-    words: ["Yo", "soy", "muy", "contenta", "hoy."],
-    errorIndex: 3,
-    correctedWord: "contento",
-    errorType: "agreement",
-    explanation:
-      "With 'yo' (masculine speaker), the adjective should be 'contento', not 'contenta'.",
-  },
-  {
-    words: ["Ella", "tiene", "mucha", "hambre."],
-    errorIndex: 2,
-    correctedWord: "mucho",
-    errorType: "grammar",
-    explanation:
-      "'Hambre' is feminine but takes 'mucho' (not 'mucha') because of the stressed initial 'a'.",
-  },
-  {
-    words: ["Nosotros", "va", "al", "parque."],
-    errorIndex: 1,
-    correctedWord: "vamos",
-    errorType: "grammar",
-    explanation:
-      "'Va' is third person singular. With 'nosotros' you need 'vamos' (first person plural).",
-  },
-  {
-    words: ["Me", "gustan", "el", "libro."],
-    errorIndex: 1,
-    correctedWord: "gusta",
-    errorType: "agreement",
-    explanation:
-      "'El libro' is singular, so the verb should be 'gusta' (singular), not 'gustan' (plural).",
-  },
-  {
-    words: ["Ayer", "como", "una", "pizza."],
-    errorIndex: 1,
-    correctedWord: "comi",
-    errorType: "grammar",
-    explanation:
-      "'Ayer' means yesterday, so you need the past tense 'comi', not the present 'como'.",
-  },
-  {
-    words: ["El", "casa", "es", "grande."],
-    errorIndex: 0,
-    correctedWord: "La",
-    errorType: "agreement",
-    explanation:
-      "'Casa' is feminine, so the article should be 'La', not 'El'.",
-  },
-  {
-    words: ["Quiero", "ir", "en", "la", "tienda."],
-    errorIndex: 2,
-    correctedWord: "a",
-    errorType: "vocabulary",
-    explanation:
-      "In Spanish, you go 'a' (to) a place, not 'en' (in/on). 'Ir a la tienda' is correct.",
-  },
-  {
-    words: ["Ella", "esta", "muy", "cansado."],
-    errorIndex: 3,
-    correctedWord: "cansada",
-    errorType: "agreement",
-    explanation:
-      "'Ella' is feminine, so the adjective should end in '-a': 'cansada', not 'cansado'.",
-  },
-  {
-    words: ["Los", "ninos", "juega", "en", "el", "parque."],
-    errorIndex: 2,
-    correctedWord: "juegan",
-    errorType: "agreement",
-    explanation:
-      "'Los ninos' is plural, so the verb needs to be plural too: 'juegan', not 'juega'.",
-  },
-  {
-    words: ["Yo", "es", "estudiante."],
-    errorIndex: 1,
-    correctedWord: "soy",
-    errorType: "grammar",
-    explanation:
-      "'Es' is third person ('he/she is'). With 'yo' (I), you need 'soy'.",
-  },
-];
+}
 
 export default function ErrorCorrectionScreen() {
   const router = useRouter();
+  const { data } = useLocalSearchParams<{ data: string }>();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [tappedIndex, setTappedIndex] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  const total = MOCK_QUESTIONS.length;
-  const question = MOCK_QUESTIONS[currentIndex];
+  const questions: ErrorQuestion[] = data ? 
+    (JSON.parse(data) as ErrorCorrection[]).map((c) => {
+      return {
+        sentence: c.sentence,
+        errorIndex: c.error_index,
+        correctedWord: c.corrected_word,
+        errorType: c.error_type,
+        explanation: c.explanation
+      }
+    }) : [];
+
+  const total = questions.length;
+  const question = questions[currentIndex];
 
   const handleTapWord = (wordIndex: number) => {
     if (tappedIndex !== null) return;
@@ -231,7 +162,7 @@ export default function ErrorCorrectionScreen() {
 
             {/* Words */}
             <View style={styles.wordsRow}>
-              {question.words.map((word, index) => (
+              {question.sentence.split(" ").map((word, index) => (
                 <TouchableOpacity
                   key={index}
                   style={getWordChipStyle(index)}
@@ -273,7 +204,7 @@ export default function ErrorCorrectionScreen() {
                 <Text style={styles.explanationText}>
                   {tappedIndex === question.errorIndex
                     ? question.explanation
-                    : `The error is in "${question.words[question.errorIndex]}". ${question.explanation}`}
+                    : `The error is in "${question.sentence.split(" ")[question.errorIndex]}". ${question.explanation}`}
                 </Text>
               </View>
             )}

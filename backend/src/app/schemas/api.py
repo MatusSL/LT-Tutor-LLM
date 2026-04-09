@@ -1,9 +1,7 @@
-from typing import List
-
 from pydantic import BaseModel
 
 from app.schemas.llm import TutorResponse, Topics
-from app.schemas.review import FillBlank, ErrorCorrection, Flashcard, PhraseQuiz
+from app.schemas.db import ReviewData
 
 
 class UserInput(BaseModel):
@@ -40,17 +38,6 @@ class HealthResponse(BaseModel):
     status: str
 
 
-class ReviewFlashcardsResponse(BaseModel):
-    flashcards: List[Flashcard]
 
-
-class ReviewPhraseResponse(BaseModel):
-    phrase_quiz: List[PhraseQuiz]
-
-
-class ReviewBlankResponse(BaseModel):
-    blank_words: List[FillBlank]
-
-
-class ReviewCorrectionResponse(BaseModel):
-    error_corrections: List[ErrorCorrection]
+class ReviewDataResponse(BaseModel):
+    review_data: ReviewData

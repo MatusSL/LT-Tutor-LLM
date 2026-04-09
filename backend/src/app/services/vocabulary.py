@@ -136,6 +136,9 @@ class Vocabulary(VocabularyProtocol):
         formatted_misused_words = normalize_user_input(analysis.misused_words)
 
         new_words = self.find_new_words(formatted_used_words)
+        if len(new_words) == 0:
+            return set()
+        
         verified_words = self.verify_new_words(new_words, formatted_misused_words)
         # self.words.update(verified_words)
 

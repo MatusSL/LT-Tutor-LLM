@@ -9,7 +9,6 @@ from app.agents.tutor import Tutor
 
 from app.core.tutor_core import TutorCore
 
-from app.schemas.constants import QWEN25_7B_MODEL
 from app.services.vocabulary import Vocabulary
 
 import os
@@ -21,10 +20,15 @@ load_dotenv()
 raw_api_key = os.getenv("MISTRAL_API_KEY")
 API_KEY = SecretStr(raw_api_key) if raw_api_key else None
 
-TUTOR_MODEL = ChatMistralAI(api_key=API_KEY)
-REVIEWER_MODEL = ChatMistralAI(api_key=API_KEY)
-TOPIC_GENERATOR_MODEL = ChatOllama(model=QWEN25_7B_MODEL, temperature=0.8, format="json")
-WORD_RECOMMENDER_MODEL = ChatOllama(model=QWEN25_7B_MODEL, temperature=0.15, format="json")
+
+# TUTOR_MODEL = ChatMistralAI(api_key=API_KEY)
+TUTOR_MODEL = ChatOllama(model="mistral-large-3:675b-cloud")
+
+# REVIEWER_MODEL = ChatMistralAI(api_key=API_KEY)
+REVIEWER_MODEL = ChatOllama(model="mistral-large-3:675b-cloud")
+
+# TOPIC_GENERATOR_MODEL = ChatOllama(model=QWEN25_7B_MODEL, temperature=0.8, format="json")
+# WORD_RECOMMENDER_MODEL = ChatOllama(model=QWEN25_7B_MODEL, temperature=0.15, format="json")
 
 
 def resolve_episode_dir() -> Path:

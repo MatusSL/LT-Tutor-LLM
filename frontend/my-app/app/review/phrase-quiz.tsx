@@ -8,7 +8,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { PhraseQuiz } from "@/services/tutor-api";
 
 const C = {
   bg: "#0F0F13",
@@ -139,9 +140,18 @@ export default function PhraseQuizScreen() {
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
-
-  const total = MOCK_QUESTIONS.length;
-  const question = MOCK_QUESTIONS[currentIndex];
+  
+  const { data } = useLocalSearchParams<{ data: string }>();
+  const questions: QuizQuestion[] = data
+    ? (JSON.parse(data) as PhraseQuiz[]).map((q) => ({
+        phrase: q.phrase,
+        correctAnswer: q.correct_answer,
+        options: q.options,
+      }))
+    : MOCK_QUESTIONS;
+  
+  const total = questions.length;
+  const question = questions[currentIndex];
 
   const handleSelect = (optionIndex: number) => {
     if (selected !== null) return;

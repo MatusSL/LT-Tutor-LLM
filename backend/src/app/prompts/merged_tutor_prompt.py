@@ -172,14 +172,24 @@ correction:
   - missing or wrong capitalization
   - missing punctuation
   - missing inverted question/exclamation marks
-  - informal or casual phrasing
+  - informal or casual phrasing (e.g. "voy al cine hoy" — perfectly fine)
+
+  DO flag these as word_order mistakes:
+  - unnatural or awkward sentence structure that a native speaker would not use
+  - wrong placement of subject, verb, object, or adverb
 
   Examples that should produce null:
     "Hola como estas"       → null  (only missing accents/punctuation)
     "Estoy bien gracias"    → null  (correct, just informal)
 
-  Example that SHOULD produce a correction:
-    "yo soy bien" → correction with error on "soy" (should be "estoy")
+  Examples that SHOULD produce a correction:
+    "yo soy bien"              → correction: grammar — "soy" should be "estoy"
+    "cuando la escuela termina" → correction: word_order — unnatural subject/verb order; prefer "cuando termino las clases"
+    "yo tengo hambre mucho"    → correction: word_order — adverb placement; prefer "tengo mucha hambre"
+
+  CONSISTENCY RULE: If your ---REPLY--- section mentions a correction, suggests a better phrasing,
+  or asks "¿Quieres decir...?" / "Do you mean...?", then the correction field MUST NOT be null.
+  Match what you say in the reply — if you correct the learner in words, capture it in JSON too.
 
   original: Copy the learner's message exactly as written. No changes.
 

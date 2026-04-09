@@ -2,6 +2,8 @@ import { View, Text, StyleSheet, StatusBar, TouchableOpacity } from "react-nativ
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { BlankWord, ErrorCorrection, Flashcard, PhraseQuiz, requestReviewData, ReviewData } from "@/services/tutor-api";
+import { useEffect, useState } from "react";
 
 const C = {
   bg: "#0F0F13",
@@ -10,7 +12,7 @@ const C = {
   border: "rgba(255,255,255,0.07)",
   accent: "#6C63FF",
   accentSoft: "rgba(108,99,255,0.15)",
-  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566" },
+  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566", error: "#E16C75" },
 };
 
 type ReviewMode = {
@@ -47,7 +49,15 @@ const MODES: ReviewMode[] = [
   },
 ];
 
+type ReviewModel = {
+  flashcards: Flashcard[] | null,
+  phraseQuiz: PhraseQuiz[] | null,
+  blankWords: BlankWord[] | null,
+  errorCorrections: ErrorCorrection[] | null
+}
+
 function ModeCard({ mode, onPress }: { mode: ReviewMode; onPress: () => void }) {
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.cardIcon}>
@@ -61,6 +71,40 @@ function ModeCard({ mode, onPress }: { mode: ReviewMode; onPress: () => void }) 
 
 export default function ReviewScreen() {
   const router = useRouter();
+  const [review, setReview] = useState<ReviewModel | null>(null)
+  const [error, setError] = useState<Error | null>(null)
+
+  const reviewDataByRoute: Record<string, unknown> = {
+    "/review/flashcards": review?.flashcards,
+    "/review/phrase-quiz": review?.phraseQuiz,
+    "/review/fill-blank": review?.blankWords,
+    "/review/error-correction": review?.errorCorrections,
+  };
+
+  useEffect(() => {
+    setError(null)
+
+    const fetchReviewData = async () => {
+      try {
+        const reviewData = await requestReviewData()
+        // console.log(reviewData.review_data)
+        const data = reviewData.review_data
+        setReview({
+          flashcards: data.flashcards,
+          phraseQuiz: data.phrase_quiz,
+          blankWords: data.blank_words,
+          errorCorrections: data.error_corrections
+        })
+
+      } catch(error) {
+        console.log(error)
+        setError(error as Error)
+      }
+    }
+
+    fetchReviewData()
+  }, [])
+
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -70,13 +114,27 @@ export default function ReviewScreen() {
         <Text style={styles.headerTitle}>Review</Text>
       </View>
       <View style={styles.divider} />
+      {error && 
+        <View>
+          <Text style={styles.error}>Fetching review from Supabase failed</Text>
+        </View>
+      }
 
       <View style={styles.body}>
         <Text style={styles.sectionTitle}>Choose a practice mode</Text>
 
         <View style={styles.grid}>
           {MODES.map((mode) => (
-            <ModeCard key={mode.route} mode={mode} onPress={() => router.push(mode.route as never)} />
+            <ModeCard
+              key={mode.route}
+              mode={mode}
+              onPress={() =>
+                router.push({
+                  pathname: mode.route as never,
+                  params: { data: JSON.stringify(reviewDataByRoute[mode.route] ?? []) },
+                })
+              }
+            />
           ))}
         </View>
       </View>
@@ -85,6 +143,9 @@ export default function ReviewScreen() {
 }
 
 const styles = StyleSheet.create({
+  error: {
+    color: C.text.error
+  },
   safe: {
     flex: 1,
     backgroundColor: C.bg,

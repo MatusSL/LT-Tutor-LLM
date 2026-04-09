@@ -1,13 +1,18 @@
-# from typing import List
-
 from typing import List
 
-from langchain_mistralai import ChatMistralAI
+from langchain_core.language_models import BaseChatModel
 from langchain.agents import create_agent
 
 from app.agents.runner import Runner
-from app.schemas.db import DistractionModel, MistakeModel
-from app.schemas.review import FillBlank, ErrorCorrection, Flashcard, PhraseQuiz
+from app.schemas.db import (
+    DistractionModel,
+    MistakeModel,
+    FillBlank,
+    ErrorCorrection,
+    Flashcard,
+    PhraseQuiz,
+    ReviewData
+)
 from app.schemas.protocols import ReviewerProtocol
 
 SYSTEM_PROMPT = """
@@ -87,16 +92,43 @@ OUTPUT FORMAT
 
 
 class Reviewer(ReviewerProtocol):
-    def __init__(self, runner: Runner, model: ChatMistralAI) -> None:
+    def __init__(self, runner: Runner, model: BaseChatModel) -> None:
         self.runner = runner
         self.agent = create_agent(model=model)
 
+
+    MAX_RETRIES = 3
     def generate_distractions(self, word: str, sentence: str) -> DistractionModel:
         prompt = SYSTEM_PROMPT.format(word=word, sentence=sentence)
 
-        response = self.runner.run_agent(self.agent, prompt)
-        cleaned = response.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-        return DistractionModel.model_validate_json(cleaned)
+        for _ in range(self.MAX_RETRIES):
+            try:
+                response = self.runner.run_agent(self.agent, prompt)
+            except Exception:
+                continue
+
+            cleaned = response.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+            if not cleaned:
+                continue
+            try:
+                return DistractionModel.model_validate_json(cleaned)
+            except RuntimeError:
+                continue
+
+        raise RuntimeError(f"Failed to generate distractions for word '{word}' after {self.MAX_RETRIES} retries")\
+    
+    def generate_review(self, mistakes: List[MistakeModel]) -> ReviewData:
+        flashcards = self.generate_flashcards(mistakes=mistakes)
+        phrase_quiz = self.generate_phrase_quiz(mistakes=mistakes)
+        error_correction = self.generate_error_correction(mistakes=mistakes)
+        fill_in_the_blank = self.generate_fill_in_the_blank(mistakes=mistakes)
+
+        return ReviewData(
+            flashcards=flashcards,
+            phrase_quiz=phrase_quiz,
+            error_corrections=error_correction,
+            blank_words=fill_in_the_blank
+        )
     
     def generate_flashcards(self, mistakes: List[MistakeModel]) -> List[Flashcard]:
         flashcards: List[Flashcard] = []

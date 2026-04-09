@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Flashcard } from "@/services/tutor-api";
 
 const C = {
   bg: "#0F0F13",
@@ -45,13 +46,17 @@ const MOCK_WORDS: WordPair[] = [
 
 export default function FlashcardsScreen() {
   const router = useRouter();
+  const { data } = useLocalSearchParams<{ data: string }>();
+  const initialCards: WordPair[] = data
+    ? (JSON.parse(data) as Flashcard[]).map((f) => ({ spanish: f.origin, english: f.translation }))
+    : [...MOCK_WORDS];
   const [startSpanish, setStartSpanish] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const [deck, setDeck] = useState<WordPair[]>([...MOCK_WORDS]);
+  const [deck, setDeck] = useState<WordPair[]>(initialCards);
   const [gotCount, setGotCount] = useState(0);
 
-  const total = MOCK_WORDS.length;
+  const total = initialCards.length;
   const current = deck[currentIndex];
   const finished = !current;
 
@@ -96,7 +101,7 @@ export default function FlashcardsScreen() {
   };
 
   const handleRestart = () => {
-    setDeck([...MOCK_WORDS]);
+    setDeck([...initialCards]);
     setCurrentIndex(0);
     setFlipped(false);
     setGotCount(0);
@@ -163,7 +168,7 @@ export default function FlashcardsScreen() {
           /* Finished state */
           <View style={styles.finishedContainer}>
             <View style={styles.finishedIcon}>
-              <Ionicons name="checkmark-circle" size={48} color={C.green} />
+              <Ionicons name="checkmark-circle" size={48} color={C.green}/>
             </View>
             <Text style={styles.finishedTitle}>All done!</Text>
             <Text style={styles.finishedDesc}>

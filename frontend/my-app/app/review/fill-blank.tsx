@@ -8,7 +8,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { BlankWord } from "@/services/tutor-api";
 
 const C = {
   bg: "#0F0F13",
@@ -107,13 +108,24 @@ const MOCK_QUESTIONS: FillBlankQuestion[] = [
 
 export default function FillBlankScreen() {
   const router = useRouter();
+  const { data } = useLocalSearchParams<{ data: string }>();
+  const questions: FillBlankQuestion[] = data
+    ? (JSON.parse(data) as BlankWord[]).map((q) => ({
+        sentence: q.sentence,
+        blankIndex: q.blank_index,
+        correctWord: q.correct_word,
+        options: q.options,
+        translation: q.translation,
+      }))
+    : MOCK_QUESTIONS;
+    
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  const total = MOCK_QUESTIONS.length;
-  const question = MOCK_QUESTIONS[currentIndex];
+  const total = questions.length;
+  const question = questions[currentIndex];
 
   const handleSelect = (word: string) => {
     if (selected !== null) return;

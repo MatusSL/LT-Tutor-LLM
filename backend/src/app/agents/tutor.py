@@ -2,7 +2,7 @@ import json
 import re
 from typing import List, Set, Tuple
 
-from langchain_mistralai import ChatMistralAI
+from langchain_core.language_models import BaseChatModel
 from langchain.agents import create_agent
 
 from app.agents.runner import Runner
@@ -19,13 +19,11 @@ MAX_RETRIES = 3
 
 
 class Tutor(TutorProtocol):
-    def __init__(self, runner: Runner, model: ChatMistralAI) -> None:
+    def __init__(self, runner: Runner, model: BaseChatModel) -> None:
         self.agent = create_agent(model=model)
         self.runner = runner
 
-    def reply(
-        self, user_input: str, context: List[Context], vocabulary: Set[str]
-    ) -> Tuple[str, TutorResponse]:
+    def reply(self, user_input: str, context: List[Context], vocabulary: Set[str]) -> Tuple[str, TutorResponse]:
         conversation = "\n".join(f"{m.role}: {m.content}" for m in context)
 
         prompt = MERGED_TUTOR_PROMPT.format(
@@ -34,7 +32,10 @@ class Tutor(TutorProtocol):
 
         last_raw_response = None
         for _ in range(MAX_RETRIES):
-            last_raw_response = self.runner.run_agent(self.agent, prompt)
+            try:
+                last_raw_response = self.runner.run_agent(self.agent, prompt)
+            except RuntimeError:
+                continue
 
             try:
                 reply_text, tutor_response = self.parse_merged_response(
@@ -46,9 +47,7 @@ class Tutor(TutorProtocol):
 
         return self.get_fallback(user_input, last_raw_response)
 
-    def parse_merged_response(
-        self, raw: str, user_input: str
-    ) -> tuple[str, TutorResponse]:
+    def parse_merged_response(self, raw: str, user_input: str) -> Tuple[str, TutorResponse]:
         reply_text = self.extract_reply_section(raw)
         json_text = self.extract_json_section(raw)
 
@@ -118,9 +117,7 @@ class Tutor(TutorProtocol):
 
         return Language.SPANISH
 
-    def get_fallback(
-        self, user_input: str, raw_response: str | None = None
-    ) -> tuple[str, TutorResponse]:
+    def get_fallback(self, user_input: str, raw_response: str | None = None) -> Tuple[str, TutorResponse]:
         reply_text = (
             self.extract_reply_section(raw_response)
             if raw_response

@@ -98,6 +98,17 @@ export type ReviewCorrectionResponse = {
     error_corrections: ErrorCorrection[]
 }
 
+export type ReviewData = {
+    flashcards: Flashcard[] | null;
+    phrase_quiz: PhraseQuiz[] | null;
+    blank_words: BlankWord[] | null;
+    error_corrections: ErrorCorrection[] | null;
+}
+
+export type Review = {
+  review_data: ReviewData
+}
+
 const requestJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(getApiUrl(path), {
     headers: {
@@ -184,22 +195,7 @@ export const transcribeAudio = async (audioUri: string): Promise<string> => {
   return data.text;
 };
 
-export const requestFlashcards = () => 
-  requestJson<ReviewFlashcardsResponse>("/review/flashcards", {
-    method: "GET"
-  })
-
-export const requestPhraseQuiz = () => 
-  requestJson<ReviewPhraseResponse>("/review/phrase-quiz", {
-    method: "GET"
-  })
-
-export const requestFillInTheBlank = () => 
-  requestJson<ReviewBlankResponse>("/review/fill-in-the-blank", {
-    method: "GET"
-  })
-
-export const requestErrorCorrection = () =>
-  requestJson<ReviewCorrectionResponse>("/review/error/correction", {
+export const requestReviewData = () =>
+  requestJson<Review>("/review", {
     method: "GET"
   })

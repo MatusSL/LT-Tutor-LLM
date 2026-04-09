@@ -87,10 +87,14 @@ class TutorCore:
         mistake_models: List[MistakeModel] = []
         
         for mistake in correction.error_candidates:
-            distractions = self.reviewer.generate_distractions(
-                word=mistake.word,
-                sentence=correction.original
-            )
+            try:
+                distractions = self.reviewer.generate_distractions(
+                    word=mistake.word,
+                    sentence=correction.original
+                )
+            except RuntimeError as e:
+                print(f"Skipping mistake '{mistake.word}': {e}")
+                continue
 
             mistake_model = MistakeModel(
                 origin=mistake.word,

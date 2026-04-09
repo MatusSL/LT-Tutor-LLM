@@ -1,9 +1,8 @@
 from typing import List, Protocol, Set, Tuple
 
 from app.schemas.constants import Context
-from app.schemas.db import DistractionModel, MistakeModel
 from app.schemas.llm import TutorResponse
-from app.schemas.review import FillBlank, ErrorCorrection, Flashcard, PhraseQuiz
+from app.schemas.db import DistractionModel, MistakeModel, ReviewData
 from app.schemas.session import UserInputAnalysis
 
 
@@ -11,17 +10,9 @@ class ReviewerProtocol(Protocol):
     def generate_distractions(self, word: str, sentence: str) -> DistractionModel:
         ...
         
-    def generate_flashcards(self, mistakes: List[MistakeModel]) -> List[Flashcard]:
+    def generate_review(self, mistakes: List[MistakeModel]) -> ReviewData:
         ...
     
-    def generate_phrase_quiz(self, mistakes: List[MistakeModel]) -> List[PhraseQuiz]:
-        ...
-    
-    def generate_fill_in_the_blank(self, mistakes: List[MistakeModel]) -> List[FillBlank]:
-        ...
-        
-    def generate_error_correction(self, mistakes: List[MistakeModel]) -> List[ErrorCorrection]:
-        ...
 
 
 class TutorProtocol(Protocol):
