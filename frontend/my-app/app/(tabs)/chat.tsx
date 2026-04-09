@@ -244,6 +244,7 @@ export default function ChatScreen() {
         id: (Date.now() + 1).toString(),
         type: "tutor",
         tutor: payload.tutor_response,
+        audio: payload.response_audio,
       };
       setMessages((prev) => {
         const updated = prev
@@ -298,7 +299,11 @@ export default function ChatScreen() {
           <Text style={styles.avatarText}>T</Text>
         </View>
         <View style={styles.tutorColumn}>
-          <TutorBubble tutor={item.tutor} onTranslate={scrollToBottom} />
+          <TutorBubble
+          tutor={item.tutor}
+          onTranslate={scrollToBottom}
+          onReplay={item.audio ? () => void playResponseAudio(item.audio!) : undefined}
+        />
         </View>
       </View>
     );

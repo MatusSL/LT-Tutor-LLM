@@ -1,8 +1,9 @@
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import List
 import threading
 
-from app.schemas.constants import Context
+from app.schemas.constants import Context, CoreServices
 from app.schemas.protocols import (
     TutorProtocol,
     ReviewerProtocol,
@@ -18,18 +19,15 @@ from app.schemas.session import UserInputAnalysis
 
 
 class TutorCore:
-    def __init__(
-        self,
-        tutor: TutorProtocol,
-        reviewer: ReviewerProtocol,
-        vocabulary: VocabularyProtocol,
-        episodes_dir: Path,
-    ):
-        self.tutor = tutor
-        self.vocabulary = vocabulary
-        self.reviewer = reviewer
-        self.session_manager = SessionManager(episodes_dir)
+    def __init__(self, core_services: CoreServices):
+        self.tutor = core_services.tutor
+        self.vocabulary = core_services.vocabulary
+        self.reviewer = core_services.reviewer
+        self.session_manager = SessionManager(core_services.episodes_dir)
+        
         self.session_state = SessionState()
+        self._vocab_lock = threading.Lock()
+        self._executor = ThreadPoolExecutor(max_workers=1)
 
 
     def handle_message(self, user_input: str) -> ChatResponse:
@@ -42,6 +40,9 @@ class TutorCore:
             vocabulary=self.session_state.vocabulary,
         )
 
+        print(f"REPLY:-----------------\n{reply}:-----------------\n")
+
+        print(f"RESPONSE:-----------------\n{response}:-----------------\n")
         self.add_messages_to_state(user_message=user_input, reply_message=reply)
         
         self.session_state.language = response.input_language
@@ -73,14 +74,15 @@ class TutorCore:
         if error_count <= 1:
             self.update_user_vocabulary(response=response)
 
-        # thread = threading.Thread(target=self.update_error_words, args=(correction,), daemon=True)
-        # thread.start()
-        self.update_error_words(correction=correction)      #? Debugging purposes
+        if error_count > 0:
+            self._executor.submit(self.update_error_words, correction)
+        # self.update_error_words(correction=correction)      #? Debugging purposes
 
 
     def update_error_words(self, correction: Correction) -> None:
         mistake_models = self.get_mistake_models_for_correction(correction=correction)
-        self.vocabulary.update_all_mistakes(mistakes=mistake_models)
+        with self._vocab_lock:
+            self.vocabulary.update_all_mistakes(mistakes=mistake_models)
     
 
     def get_mistake_models_for_correction(self, correction: Correction) -> List[MistakeModel]:
@@ -111,9 +113,8 @@ class TutorCore:
 
     def update_user_vocabulary(self, response: TutorResponse):
         analysis = self.analyize_response(response)
-        verified_new_words = self.vocabulary.verify_and_update_vocabulary(
-            analysis
-        )
+        with self._vocab_lock:
+            verified_new_words = self.vocabulary.verify_and_update_vocabulary(analysis)
 
         self.session_state.vocabulary.update(verified_new_words)
 

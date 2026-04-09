@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { C } from "@/constants/colors";
 import { LangIcon } from "./LangIcon";
 import type { TutorResponse } from "./types";
@@ -7,9 +8,10 @@ import type { TutorResponse } from "./types";
 type Props = {
   tutor: TutorResponse;
   onTranslate?: () => void;
+  onReplay?: () => void;
 };
 
-export function TutorBubble({ tutor, onTranslate }: Props) {
+export function TutorBubble({ tutor, onTranslate, onReplay }: Props) {
   const [showTranslation, setShowTranslation] = useState(false);
 
   return (
@@ -33,6 +35,14 @@ export function TutorBubble({ tutor, onTranslate }: Props) {
         {showTranslation && <View style={styles.separator} />}
         {showTranslation && (
           <Text style={styles.translation}>{tutor.response_english}</Text>
+        )}
+
+        {onReplay && (
+          <View style={styles.footer}>
+            <TouchableOpacity onPress={onReplay} activeOpacity={0.6} style={styles.replayBtn}>
+              <Ionicons name="volume-medium" size={15} color={C.text.secondary} />
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </View>
@@ -81,5 +91,16 @@ const styles = StyleSheet.create({
     color: C.text.secondary,
     fontSize: 14,
     lineHeight: 20,
+  },
+  footer: {
+    alignItems: "flex-end",
+    marginTop: 6,
+  },
+  replayBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

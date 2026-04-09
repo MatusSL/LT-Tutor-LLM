@@ -19,7 +19,7 @@ from app.schemas.api import (
     UserInput,
     ReviewDataResponse
 )
-from app.schemas.db import MistakeModel, ReviewData
+from app.schemas.db import MistakeModel
 from app.schemas.llm import Topics
 from app.services import stt_service, tts_service
 
@@ -46,7 +46,7 @@ def health_check():
 @app.post("/chat", response_model=ChatResponse)
 def chat_endpoint(user_input: UserInput):
     result = tutor_core.handle_message(user_input=user_input.user_sentence)
-    print(f"\nCHAT RESPONSE: --------{result}\n")
+
     if result.tutor_response.response_spanish:
         result.response_audio = tts_service.text_to_speech(
             result.tutor_response.response_spanish
@@ -109,7 +109,7 @@ def get_current_episode():
 def pick_random_n_mistakes(mistakes: List[MistakeModel], n: int) -> List[MistakeModel]:
     if len(mistakes) <= n:
         return mistakes[:]
-    return random.sample(mistakes, 15)
+    return random.sample(mistakes, n)
 
 
 

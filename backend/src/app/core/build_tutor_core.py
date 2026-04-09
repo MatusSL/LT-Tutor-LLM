@@ -9,6 +9,7 @@ from app.agents.tutor import Tutor
 
 from app.core.tutor_core import TutorCore
 
+from app.schemas.constants import CoreServices
 from app.services.vocabulary import Vocabulary
 
 import os
@@ -21,14 +22,11 @@ raw_api_key = os.getenv("MISTRAL_API_KEY")
 API_KEY = SecretStr(raw_api_key) if raw_api_key else None
 
 
-# TUTOR_MODEL = ChatMistralAI(api_key=API_KEY)
-TUTOR_MODEL = ChatOllama(model="mistral-large-3:675b-cloud")
+TUTOR_MODEL = ChatMistralAI(api_key=API_KEY)
+# TUTOR_MODEL = ChatOllama(model="mistral-large-3:675b-cloud")
 
-# REVIEWER_MODEL = ChatMistralAI(api_key=API_KEY)
-REVIEWER_MODEL = ChatOllama(model="mistral-large-3:675b-cloud")
-
-# TOPIC_GENERATOR_MODEL = ChatOllama(model=QWEN25_7B_MODEL, temperature=0.8, format="json")
-# WORD_RECOMMENDER_MODEL = ChatOllama(model=QWEN25_7B_MODEL, temperature=0.15, format="json")
+REVIEWER_MODEL = ChatMistralAI(api_key=API_KEY)
+# REVIEWER_MODEL = ChatOllama(model="mistral-large-3:675b-cloud")
 
 
 def resolve_episode_dir() -> Path:
@@ -42,12 +40,6 @@ def resolve_episode_dir() -> Path:
 def setup_tutor_service(runner: Runner) -> Tutor:
     return Tutor(runner=runner, model=TUTOR_MODEL)
 
-# def setup_topic_generator_service(runner: Runner) -> TopicGenerator:
-#     return TopicGenerator(runner=runner, model=TOPIC_GENERATOR_MODEL)
-
-# def setup_word_recommender_service(runner: Runner) -> WordRecommender:
-#     return WordRecommender(runner=runner, model=WORD_RECOMMENDER_MODEL)
-
 def setup_reviewer_service(runner: Runner) -> Reviewer:
     return Reviewer(runner=runner, model=REVIEWER_MODEL)
 
@@ -56,20 +48,20 @@ def build_tutor_core() -> TutorCore:
     runner = Runner()
 
     tutor = setup_tutor_service(runner=runner)
-    # topic_generator = setup_topic_generator_service(runner=runner)
-    # word_recommender = setup_word_recommender_service(runner=runner)
     reviewer = setup_reviewer_service(runner=runner)
 
     vocabulary = Vocabulary()
 
     episode_dir = resolve_episode_dir()
 
-    return TutorCore(
+    core_services = CoreServices(
         tutor=tutor,
         reviewer=reviewer,
         vocabulary=vocabulary,
-        episodes_dir=episode_dir,
+        episodes_dir=episode_dir
     )
+
+    return TutorCore(core_services=core_services)
 
 
 if __name__ == "__main__":

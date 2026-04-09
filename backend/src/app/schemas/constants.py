@@ -1,5 +1,8 @@
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict
+
+from app.schemas.protocols import ReviewerProtocol, TutorProtocol, VocabularyProtocol
 
 QWEN25_7B_MODEL = "qwen2.5:7b"
 QWEN25_14B_MODEL = "qwen2.5:14b"
@@ -12,3 +15,11 @@ type LLMResponse = Dict[str, Any]
 class Context:
     role: str
     content: str
+
+
+@dataclass
+class CoreServices:
+    tutor: TutorProtocol
+    reviewer: ReviewerProtocol
+    vocabulary: VocabularyProtocol
+    episodes_dir: Path
