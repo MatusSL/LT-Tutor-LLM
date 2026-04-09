@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from langchain_ollama import ChatOllama
 from langchain_mistralai.chat_models import ChatMistralAI
 
 from app.agents.reviewer import Reviewer
@@ -64,9 +63,5 @@ def build_tutor_core() -> TutorCore:
     return TutorCore(core_services=core_services)
 
 
-if __name__ == "__main__":
-    sentence = "Te voy a digo algo nuevo!"
-    word = "digo"
-    r = Reviewer(Runner(), ChatMistralAI(api_key=API_KEY))
-    m = r.generate_distractions(word=word, sentence=sentence)
-    print(m.model_dump())
+_tutor_core_instance: TutorCore = build_tutor_core()
+

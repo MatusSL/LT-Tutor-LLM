@@ -1,14 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
 from typing import List
 import threading
 
 from app.schemas.constants import Context, CoreServices
-from app.schemas.protocols import (
-    TutorProtocol,
-    ReviewerProtocol,
-    VocabularyProtocol
-)
 from app.core.session_state import SessionState
 from app.core.session_manager import SessionManager
 
@@ -24,7 +18,7 @@ class TutorCore:
         self.vocabulary = core_services.vocabulary
         self.reviewer = core_services.reviewer
         self.session_manager = SessionManager(core_services.episodes_dir)
-        
+
         self.session_state = SessionState()
         self._vocab_lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=1)
