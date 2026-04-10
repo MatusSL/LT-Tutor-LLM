@@ -106,14 +106,14 @@ class TutorCore:
 
 
     def update_user_vocabulary(self, response: TutorResponse):
-        analysis = self.analyize_response(response)
+        analysis = self.analyze_response(response)
         with self._vocab_lock:
             verified_new_words = self.vocabulary.verify_and_update_vocabulary(analysis)
 
         self.session_state.vocabulary.update(verified_new_words)
 
 
-    def analyize_response(self, tutor_response: TutorResponse) -> UserInputAnalysis:
+    def analyze_response(self, tutor_response: TutorResponse) -> UserInputAnalysis:
         used_words = set(tutor_response.input_spanish.split())
         correction = tutor_response.correction
 
