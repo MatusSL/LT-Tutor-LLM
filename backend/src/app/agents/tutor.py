@@ -1,8 +1,10 @@
 import json
+import logging
 import re
 from typing import List, Set, Tuple
 
 from langchain_core.language_models import BaseChatModel
+from langchain_core.exceptions import LangChainException
 from langchain.agents import create_agent
 
 from app.agents.runner import Runner
@@ -12,6 +14,9 @@ from app.schemas.db import Language
 from app.schemas.llm import TutorResponse
 from app.schemas.protocols import TutorProtocol
 
+from pydantic import ValidationError
+
+logger = logging.getLogger(__name__)
 
 REPLY_DELIMITER = "---REPLY---"
 JSON_DELIMITER = "---JSON---"
@@ -31,10 +36,14 @@ class Tutor(TutorProtocol):
         )
 
         last_raw_response = None
-        for _ in range(MAX_RETRIES):
+        for attempt in range(MAX_RETRIES):
             try:
                 last_raw_response = self.runner.run_agent(self.agent, prompt)
-            except RuntimeError:
+            except LangChainException as e:
+                logger.warning(
+                    f"Failed to run the tutor agent on {attempt=}",
+                    exc_info=e
+                    )
                 continue
 
             try:
@@ -42,9 +51,10 @@ class Tutor(TutorProtocol):
                     last_raw_response, user_input
                 )
                 return reply_text, tutor_response
-            except Exception:
+            except (ValueError, ValidationError):
                 pass
-
+        
+        logger.error("Failed to get valid response from tutor agent")
         return self.get_fallback(user_input, last_raw_response)
 
     def parse_merged_response(self, raw: str, user_input: str) -> Tuple[str, TutorResponse]:
@@ -56,7 +66,13 @@ class Tutor(TutorProtocol):
             raise ValueError("Could not parse JSON from response")
 
         normalized = self.normalize_payload(payload, user_input)
-        tutor_response = TutorResponse.model_validate(normalized)
+        
+        try:
+            tutor_response = TutorResponse.model_validate(normalized)
+
+        except ValidationError as e:
+            logger.warning("Failed to validate response.", exc_info=e)
+            raise
 
         return reply_text, tutor_response
 
@@ -81,7 +97,8 @@ class Tutor(TutorProtocol):
             payload = json.loads(text)
             if isinstance(payload, dict):
                 return payload
-        except Exception:
+        except json.JSONDecodeError as e:
+            logger.warning("Failed to extract json from payload.", exc_info=e)
             pass
 
         match = re.search(r"\{.*\}", text, re.DOTALL)
@@ -90,7 +107,12 @@ class Tutor(TutorProtocol):
                 payload = json.loads(match.group(0))
                 if isinstance(payload, dict):
                     return payload
-            except Exception:
+                
+            except json.JSONDecodeError as e:
+                logger.warning(
+                    "Failed to extract json from payload after regex search.",
+                    exc_info=e
+                )
                 pass
 
         return None

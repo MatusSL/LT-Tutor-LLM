@@ -2,7 +2,9 @@ import os
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from httpx import HTTPError
+from postgrest import APIError
 
 from app.core.build_tutor_core import _tutor_core_instance
 from app.schemas.api import ChatResponse, UserInput
@@ -13,7 +15,10 @@ router = APIRouter()
 
 @router.post("/chat", response_model=ChatResponse)
 def chat_endpoint(user_input: UserInput):
-    result = _tutor_core_instance.handle_message(user_input=user_input.user_sentence)
+    try:
+        result = _tutor_core_instance.handle_message(user_input=user_input.user_sentence)
+    except (HTTPError, APIError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
     if result.tutor_response.response_spanish:
         result.response_audio = tts_service.text_to_speech(

@@ -1,6 +1,10 @@
 from typing import List, Set
 
 from postgrest import APIResponse
+from postgrest.exceptions import APIError
+from httpx import HTTPError
+
+import logging
 
 from app.database.supabase_setup import get_supabase
 from app.schemas.db import MistakeModel, Table, User, UserModel, WordModel
@@ -8,6 +12,8 @@ from app.schemas.session import UserInputAnalysis
 from app.schemas.protocols import VocabularyProtocol
 
 from app.utils.helpers import normalize_user_input
+
+logger = logging.getLogger(__name__)
 
 
 class Vocabulary(VocabularyProtocol):
@@ -20,39 +26,72 @@ class Vocabulary(VocabularyProtocol):
             self._words = self.load_vocabulary()
         return self._words
 
+
     # * Database operation
     def load_vocabulary(self) -> Set[str]:
-        response = (
-            get_supabase()
-            .table(Table.WORDS)
-            .select("*")
-            .execute()
-        )
+        try:
+            response = (
+                get_supabase()
+                .table(Table.WORDS)
+                .select("*")
+                .execute()
+            )
 
-        vocabulary = self.get_words_from_response(response)
-        return vocabulary
+            vocabulary = self.get_words_from_response(response)
+            return vocabulary
+        
+        except HTTPError as e:
+            logger.error("Supabase could not be reached.", exc_info=e)
+            raise
+        
+        except APIError as e:
+            code = e.code
+            msg = e.message
+            details = e.details
+
+            logger.error(
+                f"Error while fetching vocabulary from database.:\n{msg=}\n{code=}\n{details=}",
+                exc_info=e
+            )
+            raise
 
     # * Database operation
     def update_max_episode_completed(self, episode: int) -> None:
-        (
-        get_supabase()
-        .table(Table.USERS)
-        .update({User.MAX_EPISODE: episode})
-        .eq(User.DISPLAY_NAME, "matus")
-        .execute()
-        )
+        try:
+            (
+            get_supabase()
+            .table(Table.USERS)
+            .update({User.MAX_EPISODE: episode})
+            .eq(User.DISPLAY_NAME, "matus")
+            .execute()
+            )
+        
+        except (HTTPError, APIError) as e:
+            logger.warning("Failed to save episode progress.", exc_info=e)
 
     # * Database operation
     def get_max_episode_completed(self) -> int:
-        response = (
-            get_supabase()
-            .table(Table.USERS)
-            .select("*")
-            .eq(User.DISPLAY_NAME, "matus")
-            .execute()
-        )
+        try:
+            response = (
+                get_supabase()
+                .table(Table.USERS)
+                .select("*")
+                .eq(User.DISPLAY_NAME, "matus")
+                .execute()
+            )
+            if len(response.data) == 0:
+                return 0
+            
+            return UserModel.model_validate(response.data[0]).max_episode
+        
+        except HTTPError as e:
+            logger.error("DB connection failed.", exc_info=e)
+            raise
 
-        return UserModel.model_validate(response.data[0]).max_episode
+        except APIError as e:
+            logger.error(f"DB query failed {e.message}.", exc_info=e)
+            raise
+
 
     # * Database operation
     def update_word(self, word: str) -> None:
@@ -61,30 +100,37 @@ class Vocabulary(VocabularyProtocol):
 
         payload = WordModel(word=word)
 
-        (
-        get_supabase()
-        .table(Table.WORDS)
-        .upsert(
-            payload.model_dump(exclude_none=True),
-            on_conflict="word"
-        )
-        .execute()
-        )
+        try:
+            (
+            get_supabase()
+            .table(Table.WORDS)
+            .upsert(
+                payload.model_dump(exclude_none=True),
+                on_conflict="word"
+            )
+            .execute()
+            )
+            
+        except (HTTPError, APIError) as e:
+            logger.warning(f"Failed to update {word=}.", exc_info=e)
 
     # * Database operation
     def update_mistake(self, mistake: MistakeModel) -> None:
         if mistake.origin is None or mistake.origin.strip() == "":
             return
 
-        (
-        get_supabase()
-        .table(Table.MISTAKES)
-        .upsert(
-            mistake.model_dump(exclude_none=True),
-            on_conflict="origin"
-        )
-        .execute()
-        )
+        try:
+            (
+            get_supabase()
+            .table(Table.MISTAKES)
+            .upsert(
+                mistake.model_dump(exclude_none=True),
+                on_conflict="origin"
+            )
+            .execute()
+            )
+        except (HTTPError, APIError) as e:
+            logger.warning(f"Failed to update {mistake.origin=}", exc_info=e)
 
     # * Database operation
     def update_all_mistakes(self, mistakes: List[MistakeModel]) -> None:
@@ -94,14 +140,30 @@ class Vocabulary(VocabularyProtocol):
 
     # * Database operation
     def get_all_mistakes(self) -> List[MistakeModel]:
-        response = (
-            get_supabase()
-            .table(Table.MISTAKES)
-            .select("*")
-            .execute()
-        )
+        try:
+            response = (
+                get_supabase()
+                .table(Table.MISTAKES)
+                .select("*")
+                .execute()
+            )
 
-        return [MistakeModel.model_validate(row) for row in response.data]
+            return [MistakeModel.model_validate(row) for row in response.data]
+        
+        except HTTPError as e:
+            logger.error(
+                "Failed to connect to DB while getting mistakes",
+                exc_info=e
+            )
+            raise
+
+        except APIError as e:
+            logger.error(
+                "Failed to query DB while getting mistakes",
+                exc_info=e
+            )
+            raise
+
 
     # * Database operation
     def update_all_words(self, words: Set[str]):
@@ -144,37 +206,3 @@ class Vocabulary(VocabularyProtocol):
 
         self.update_all_words(verified_words)
         return verified_words
-
-
-# def get_todays_words() -> dict[str, dict[str, Any]]:
-#     now = datetime.now(timezone.utc)
-
-#     start_of_today = datetime(
-#         year=now.year, month=now.month, day=now.day, tzinfo=timezone.utc
-#     )
-
-#     start_of_tomorrow = start_of_today + timedelta(days=1)
-
-#     docs = (
-#         db.collection(UNLOCKED_WORDS)
-#         .where(filter=FieldFilter("last_used", ">=", start_of_today))
-#         .where(filter=FieldFilter("last_used", "<=", start_of_tomorrow))
-#         .stream()
-#     )
-
-#     todays_words: dict[str, dict[str, Any]] = {}
-
-#     for doc in docs:
-#         report = doc.to_dict()
-
-#         if report is None:
-#             continue
-
-#         word = doc.id
-#         todays_words[word] = report
-
-#     print(todays_words)
-#     return todays_words
-
-if __name__ == "__main__":
-    print(Vocabulary().get_all_mistakes())

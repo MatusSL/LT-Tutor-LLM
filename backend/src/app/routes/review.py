@@ -1,7 +1,9 @@
 import random
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from httpx import HTTPError
+from postgrest import APIError
 
 from app.schemas.api import ReviewDataResponse
 from app.schemas.db import MistakeModel
@@ -19,7 +21,11 @@ def pick_random_n_mistakes(mistakes: List[MistakeModel], n: int) -> List[Mistake
 
 @router.get("/review", response_model=ReviewDataResponse)
 def get_review() -> ReviewDataResponse:
-    mistakes = _tutor_core_instance.vocabulary.get_all_mistakes()
+    try:
+        mistakes = _tutor_core_instance.vocabulary.get_all_mistakes()
+    except (HTTPError, APIError):
+        raise HTTPException(status_code=503, detail="Database not available")
+    
     random_mistakes = pick_random_n_mistakes(mistakes=mistakes, n=15)
     review_data = _tutor_core_instance.reviewer.generate_review(mistakes=random_mistakes)
     return ReviewDataResponse(review_data=review_data)

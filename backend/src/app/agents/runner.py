@@ -1,6 +1,12 @@
+import logging
+
 from langchain.messages import HumanMessage, AIMessage
 from langchain_core.runnables import Runnable
+from langchain_core.exceptions import LangChainException
+
 from app.schemas.constants import LLMResponse
+
+logger = logging.getLogger(__name__)
 
 
 class Runner:
@@ -13,19 +19,25 @@ class Runner:
             content = self.extract_content(response)
             return content
 
-        except Exception as exc:
-            raise RuntimeError(f"Error running agent: {exc}") from exc
+        except LangChainException as e:
+            logger.debug("Failed to run the runner.", exc_info=e)
+            raise
 
     def extract_content(self, response: LLMResponse) -> str:
-        last_message = response["messages"][-1]
+        try:
+            last_message = response["messages"][-1]
 
-        if isinstance(last_message, HumanMessage):
-            return ""
+            if isinstance(last_message, HumanMessage):
+                return ""
 
-        ai_message: AIMessage = last_message
+            ai_message: AIMessage = last_message
 
-        content = ai_message.content
-        if isinstance(content, list):
-            return " ".join(str(c) for c in content)
+            content = ai_message.content
+            if isinstance(content, list):
+                return " ".join(str(c) for c in content)
 
-        return content
+            return content
+        
+        except (KeyError, IndexError) as e:
+            logger.error("Failed to generate valid response.", exc_info=e)
+            raise LangChainException("Failed to extract content from response")

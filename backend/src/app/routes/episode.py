@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException
 
+from postgrest.exceptions import APIError
+from httpx import HTTPError
+
 from app.core.build_tutor_core import _tutor_core_instance
 from app.schemas.api import (
     CurrentEpisodeResponse,
@@ -28,26 +31,34 @@ def build_episode_response(episode: int) -> EpisodeResponse:
 
 
 def build_saved_episode_response() -> SavedEpisodeResponse:
-    episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
-    if episode <= 0:
-        raise HTTPException(status_code=404, detail="No completed episode has been saved yet.")
+    try:
+        episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
+        if episode <= 0:
+            raise HTTPException(status_code=404, detail="No completed episode has been saved yet.")
 
-    episode_response = build_episode_response(episode)
-    return SavedEpisodeResponse(**episode_response.model_dump(mode="json"))
+        episode_response = build_episode_response(episode)
+        return SavedEpisodeResponse(**episode_response.model_dump(mode="json"))
+    
+    except (HTTPError, APIError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
 
 
 @router.post("/episode", response_model=EpisodeResponse)
-def set_episode(request: EpisodeRequest):
+def set_episode(request: EpisodeRequest) -> EpisodeResponse:
     _tutor_core_instance.vocabulary.update_max_episode_completed(request.episode)
     return build_episode_response(request.episode)
 
 
 @router.get("/episode/saved", response_model=SavedEpisodeResponse)
-def load_saved_episode():
+def load_saved_episode() -> SavedEpisodeResponse:
     return build_saved_episode_response()
 
 
 @router.get("/episode/current", response_model=CurrentEpisodeResponse)
-def get_current_episode():
-    current_episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
-    return CurrentEpisodeResponse(episode=current_episode)
+def get_current_episode() -> CurrentEpisodeResponse:
+    try:
+        current_episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
+        return CurrentEpisodeResponse(episode=current_episode)
+    
+    except (HTTPError, APIError):
+        raise HTTPException(status_code=503, detail="Database unavailable")

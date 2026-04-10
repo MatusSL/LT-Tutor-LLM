@@ -1,5 +1,7 @@
-from concurrent.futures import ThreadPoolExecutor
+import logging
 from typing import List
+
+from concurrent.futures import ThreadPoolExecutor
 import threading
 
 from app.schemas.constants import Context, CoreServices
@@ -10,6 +12,8 @@ from app.schemas.api import ChatResponse
 from app.schemas.db import Language, MistakeModel
 from app.schemas.llm import Correction, TutorResponse
 from app.schemas.session import UserInputAnalysis
+
+logger = logging.getLogger(__name__)
 
 
 class TutorCore:
@@ -34,9 +38,10 @@ class TutorCore:
             vocabulary=self.session_state.vocabulary,
         )
 
-        print(f"REPLY:-----------------\n{reply}:-----------------\n")
+        logger.debug(f"---- Reply ---- \n{reply}\n")
 
-        print(f"RESPONSE:-----------------\n{response}:-----------------\n")
+        logger.debug(f"---- Response ---- \n{response}\n")
+
         self.add_messages_to_state(user_message=user_input, reply_message=reply)
         
         self.session_state.language = response.input_language
@@ -89,7 +94,7 @@ class TutorCore:
                     sentence=correction.original
                 )
             except RuntimeError as e:
-                print(f"Skipping mistake '{mistake.word}': {e}")
+                logger.warning(f"Skipping mistake '{mistake.word}'", exc_info=e)
                 continue
 
             mistake_model = MistakeModel(
