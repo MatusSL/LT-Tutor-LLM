@@ -10,6 +10,6 @@ def _get_model() -> WhisperModel:
     return _model
 
 
-def transcribe(audio_path: str) -> str:
-    segments, _ = _get_model().transcribe(audio_path, language="es")
+def transcribe(audio_path: str, language: str) -> str:
+    segments, _ = _get_model().transcribe(audio_path, language=language)
     return " ".join(segment.text for segment in segments).strip()

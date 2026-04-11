@@ -40,3 +40,7 @@ class HealthResponse(BaseModel):
 
 class ReviewDataResponse(BaseModel):
     review_data: ReviewData
+
+
+class TranscribeResponse(BaseModel):
+    text: str

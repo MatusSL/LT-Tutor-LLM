@@ -16,13 +16,15 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s - %(message)s"
 )
 
-# Suppress noisy third-party HTTP internals
+
 for _noisy in ("httpcore", "httpx", "hpack", "openai", "python_multipart", "asyncio", "faster_whisper"):
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
+
 app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,10 +42,10 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
     )
     
 
-app.include_router(health.router)
 app.include_router(chat.router)
-app.include_router(episode.router)
 app.include_router(review.router)
+app.include_router(health.router)
+app.include_router(episode.router)
 
 
 if __name__ == "__main__":

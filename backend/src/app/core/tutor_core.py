@@ -39,7 +39,6 @@ class TutorCore:
         )
 
         logger.debug(f"---- Reply ---- \n{reply}\n")
-
         logger.debug(f"---- Response ---- \n{response}\n")
 
         self.add_messages_to_state(user_message=user_input, reply_message=reply)

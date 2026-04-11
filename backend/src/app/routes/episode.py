@@ -15,6 +15,27 @@ from app.schemas.llm import Topics
 router = APIRouter()
 
 
+@router.post("/episode", response_model=EpisodeResponse)
+def set_episode(request: EpisodeRequest) -> EpisodeResponse:
+    _tutor_core_instance.vocabulary.update_max_episode_completed(request.episode)
+    return build_episode_response(request.episode)
+
+
+@router.get("/episode/saved", response_model=SavedEpisodeResponse)
+def load_saved_episode() -> SavedEpisodeResponse:
+    return build_saved_episode_response()
+
+
+@router.get("/episode/current", response_model=CurrentEpisodeResponse)
+def get_current_episode() -> CurrentEpisodeResponse:
+    try:
+        current_episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
+        return CurrentEpisodeResponse(episode=current_episode)
+    
+    except (HTTPError, APIError):
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+
 def load_episode_vocabulary_into_session(episode: int) -> None:
     unlocked_words = (
         _tutor_core_instance
@@ -51,22 +72,3 @@ def build_saved_episode_response() -> SavedEpisodeResponse:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
 
-@router.post("/episode", response_model=EpisodeResponse)
-def set_episode(request: EpisodeRequest) -> EpisodeResponse:
-    _tutor_core_instance.vocabulary.update_max_episode_completed(request.episode)
-    return build_episode_response(request.episode)
-
-
-@router.get("/episode/saved", response_model=SavedEpisodeResponse)
-def load_saved_episode() -> SavedEpisodeResponse:
-    return build_saved_episode_response()
-
-
-@router.get("/episode/current", response_model=CurrentEpisodeResponse)
-def get_current_episode() -> CurrentEpisodeResponse:
-    try:
-        current_episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
-        return CurrentEpisodeResponse(episode=current_episode)
-    
-    except (HTTPError, APIError):
-        raise HTTPException(status_code=503, detail="Database unavailable")

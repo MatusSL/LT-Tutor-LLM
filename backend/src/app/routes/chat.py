@@ -2,12 +2,12 @@ import os
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from httpx import HTTPError
 from postgrest import APIError
 
 from app.core.build_tutor_core import _tutor_core_instance
-from app.schemas.api import ChatResponse, UserInput
+from app.schemas.api import ChatResponse, UserInput, TranscribeResponse
 from app.services import stt_service, tts_service
 
 router = APIRouter()
@@ -27,14 +27,18 @@ def chat_endpoint(user_input: UserInput):
     return result
 
 
-@router.post("/transcribe")
-async def transcribe_endpoint(audio: UploadFile = File(...)):
+@router.post("/chat/transcribe", response_model=TranscribeResponse)
+async def transcribe_endpoint(
+    audio: UploadFile = File(...),
+    language: str = Form("es"),
+) -> TranscribeResponse:
     suffix = Path(audio.filename or "audio.m4a").suffix or ".m4a"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(await audio.read())
         tmp_path = tmp.name
     try:
-        text = stt_service.transcribe(tmp_path)
-        return {"text": text}
+        text = stt_service.transcribe(tmp_path, language)
+        return TranscribeResponse(text=text)
+
     finally:
         os.unlink(tmp_path)
