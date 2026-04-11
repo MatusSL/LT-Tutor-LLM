@@ -164,7 +164,7 @@ export const sendChatMessage = (userSentence: string) =>
     body: JSON.stringify({ user_sentence: userSentence }),
   });
 
-export const transcribeAudio = async (audioUri: string): Promise<string> => {
+export const transcribeAudio = async (audioUri: string, language: string): Promise<string> => {
   const filename = audioUri.split("/").pop() ?? "recording.m4a";
   const formData = new FormData();
 
@@ -181,8 +181,9 @@ export const transcribeAudio = async (audioUri: string): Promise<string> => {
       type: "audio/m4a",
     } as unknown as Blob);
   }
+  formData.append("language", language);
 
-  const response = await fetch(getApiUrl("/transcribe"), {
+  const response = await fetch(getApiUrl("/chat/transcribe"), {
     method: "POST",
     body: formData,
   });

@@ -41,6 +41,7 @@ import { LoadingBubble } from "@/components/chat/LoadingBubble";
 import { SetupCard } from "@/components/chat/SetupCard";
 import { EpisodeSelector } from "@/components/chat/EpisodeSelector";
 
+
 export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -59,6 +60,7 @@ export default function ChatScreen() {
   const [recordSecs, setRecordSecs] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [language, setLanguage] = useState<"es"|"gb">("es")
 
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
@@ -195,7 +197,7 @@ export default function ChatScreen() {
       return;
     }
     try {
-      const text = await transcribeAudio(uri);
+      const text = await transcribeAudio(uri, language);
       setIsTranscribing(false);
       if (text.trim()) await sendMessageWithText(text);
     } catch {
@@ -495,7 +497,13 @@ export default function ChatScreen() {
                     )}
                   </TouchableOpacity>
                 </View>
-                <View style={{ width: 40 }} />
+                <TouchableOpacity
+                  style={styles.langToggleBtn}
+                  onPress={() => setLanguage((l) => (l === "es" ? "gb" : "es"))}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.langToggleText}>{language == "es" ? "ES" : "EN"}</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -599,19 +607,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   inputArea: {
-    minHeight: 100,
+    minHeight: 90,
     backgroundColor: C.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: C.border,
     justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 38
   },
   voiceBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 35,
     flex: 1,
-    justifyContent: "flex-start",
+    justifyContent: "center",
   },
   keyboardToggleBtn: {
     width: 40,
@@ -698,4 +707,19 @@ const styles = StyleSheet.create({
   sendBtnActive: {
     backgroundColor: C.accent,
   },
+  langToggleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.surfaceAlt,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  langToggleText: {
+    color: C.text.secondary,
+    fontSize: 17,
+  }
 });
