@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Set
 
-from app.schemas.constants import Context, LLMResponse
+from app.schemas.types import Context, LLMResponse
 from app.schemas.db import Language
 
 

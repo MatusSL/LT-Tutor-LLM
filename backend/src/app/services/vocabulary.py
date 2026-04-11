@@ -8,7 +8,7 @@ import logging
 
 from app.database.supabase_setup import get_supabase
 from app.schemas.db import MistakeModel, Table, User, UserModel, WordModel
-from app.schemas.session import UserInputAnalysis
+from app.schemas.types import UserInputAnalysis
 from app.schemas.protocols import VocabularyProtocol
 
 from app.utils.helpers import normalize_user_input

@@ -38,6 +38,5 @@ class HealthResponse(BaseModel):
     status: str
 
 
-
 class ReviewDataResponse(BaseModel):
     review_data: ReviewData

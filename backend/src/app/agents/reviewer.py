@@ -3,7 +3,6 @@ from typing import List
 from langchain_core.language_models import BaseChatModel
 from langchain.agents import create_agent
 
-from app.agents.runner import Runner
 from app.schemas.db import (
     DistractionModel,
     MistakeModel,
@@ -13,7 +12,7 @@ from app.schemas.db import (
     PhraseQuiz,
     ReviewData
 )
-from app.schemas.protocols import ReviewerProtocol
+from app.schemas.protocols import ReviewerProtocol, RunnerProtocol
 
 SYSTEM_PROMPT = """
 You are a Spanish language exercise designer. A learner made a mistake using the word WORD inside SENTENCE.
@@ -92,7 +91,7 @@ OUTPUT FORMAT
 
 
 class Reviewer(ReviewerProtocol):
-    def __init__(self, runner: Runner, model: BaseChatModel) -> None:
+    def __init__(self, runner: RunnerProtocol, model: BaseChatModel) -> None:
         self.runner = runner
         self.agent = create_agent(model=model)
 

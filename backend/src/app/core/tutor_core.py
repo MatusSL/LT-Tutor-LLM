@@ -1,17 +1,17 @@
 import logging
 from typing import List
 
-from concurrent.futures import ThreadPoolExecutor
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
-from app.schemas.constants import Context, CoreServices
 from app.core.session_state import SessionState
 from app.core.session_manager import SessionManager
 
 from app.schemas.api import ChatResponse
+from app.schemas.constants import CoreServices
 from app.schemas.db import Language, MistakeModel
 from app.schemas.llm import Correction, TutorResponse
-from app.schemas.session import UserInputAnalysis
+from app.schemas.types import Context, UserInputAnalysis
 
 logger = logging.getLogger(__name__)
 

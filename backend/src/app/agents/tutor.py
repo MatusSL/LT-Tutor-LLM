@@ -7,12 +7,11 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.exceptions import LangChainException
 from langchain.agents import create_agent
 
-from app.agents.runner import Runner
 from app.prompts.merged_tutor_prompt import MERGED_TUTOR_PROMPT
-from app.schemas.constants import Context
+from app.schemas.types import Context
 from app.schemas.db import Language
 from app.schemas.llm import TutorResponse
-from app.schemas.protocols import TutorProtocol
+from app.schemas.protocols import RunnerProtocol, TutorProtocol
 
 from pydantic import ValidationError
 
@@ -24,7 +23,7 @@ MAX_RETRIES = 3
 
 
 class Tutor(TutorProtocol):
-    def __init__(self, runner: Runner, model: BaseChatModel) -> None:
+    def __init__(self, runner: RunnerProtocol, model: BaseChatModel) -> None:
         self.agent = create_agent(model=model)
         self.runner = runner
 

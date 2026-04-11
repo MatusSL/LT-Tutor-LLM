@@ -4,12 +4,14 @@ from langchain.messages import HumanMessage, AIMessage
 from langchain_core.runnables import Runnable
 from langchain_core.exceptions import LangChainException
 
-from app.schemas.constants import LLMResponse
+from app.schemas.types import LLMResponse
+
+from app.schemas.protocols import RunnerProtocol
 
 logger = logging.getLogger(__name__)
 
 
-class Runner:
+class Runner(RunnerProtocol):
     def __init__(self) -> None:
         pass
 
