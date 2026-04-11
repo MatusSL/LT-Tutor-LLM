@@ -27,7 +27,7 @@ export type Topic = {
 
 export type Message =
   | { id: string; type: "user"; text: string; tutor?: TutorResponse }
-  | { id: string; type: "tutor"; tutor: TutorResponse; audio?: string }
+  | { id: string; type: "tutor"; tutor: TutorResponse; audio?: string | null}
   | { id: string; type: "loading" };
 
 export type SetupStep = "options" | "selectEpisodes" | "chat";

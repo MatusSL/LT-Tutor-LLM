@@ -8,10 +8,12 @@ import type { TutorResponse } from "./types";
 type Props = {
   tutor: TutorResponse;
   onTranslate?: () => void;
-  onReplay?: () => void;
+  onPlay?: () => void;
+  onStop?: () => void;
+  isPlaying?: boolean;
 };
 
-export function TutorBubble({ tutor, onTranslate, onReplay }: Props) {
+export function TutorBubble({ tutor, onTranslate, onPlay, onStop, isPlaying }: Props) {
   const [showTranslation, setShowTranslation] = useState(false);
 
   return (
@@ -37,10 +39,18 @@ export function TutorBubble({ tutor, onTranslate, onReplay }: Props) {
           <Text style={styles.translation}>{tutor.response_english}</Text>
         )}
 
-        {onReplay && (
+        {onPlay && (
           <View style={styles.footer}>
-            <TouchableOpacity onPress={onReplay} activeOpacity={0.6} style={styles.replayBtn}>
-              <Ionicons name="volume-medium" size={15} color={C.text.secondary} />
+            <TouchableOpacity
+              onPress={isPlaying ? onStop : onPlay}
+              activeOpacity={0.6}
+              style={styles.replayBtn}
+            >
+              <Ionicons
+                name={isPlaying ? "stop-circle-outline" : "volume-medium"}
+                size={15}
+                color={isPlaying ? C.accent : C.text.secondary}
+              />
             </TouchableOpacity>
           </View>
         )}

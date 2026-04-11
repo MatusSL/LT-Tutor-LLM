@@ -21,7 +21,7 @@ import {
   useAudioRecorder,
   RecordingPresets,
 } from "expo-audio";
-import type { AudioPlayer } from "expo-audio";
+import type { AudioPlayer, AudioStatus } from "expo-audio";
 import { File as FSFile, Paths } from "expo-file-system";
 
 import {
@@ -58,10 +58,12 @@ export default function ChatScreen() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordSecs, setRecordSecs] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
 
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const playerRef = useRef<AudioPlayer | null>(null);
+  const webAudioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
@@ -107,7 +109,19 @@ export default function ChatScreen() {
   const scrollToBottom = () =>
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
-  const playResponseAudio = async (base64Audio: string) => {
+  const stopAudio = () => {
+    if (webAudioRef.current) {
+      webAudioRef.current.pause();
+      webAudioRef.current = null;
+    }
+    if (playerRef.current) {
+      playerRef.current.remove();
+      playerRef.current = null;
+    }
+    setPlayingMessageId(null);
+  };
+
+  const playResponseAudio = async (base64Audio: string, messageId: string) => {
     try {
       const binaryStr = atob(base64Audio);
       const bytes = new Uint8Array(binaryStr.length);
@@ -116,10 +130,20 @@ export default function ChatScreen() {
       }
 
       if (Platform.OS === "web") {
+        if (webAudioRef.current) {
+          webAudioRef.current.pause();
+          webAudioRef.current = null;
+        }
         const blob = new Blob([bytes], { type: "audio/mpeg" });
         const url = URL.createObjectURL(blob);
         const audio = new window.Audio(url);
-        audio.onended = () => URL.revokeObjectURL(url);
+        webAudioRef.current = audio;
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          webAudioRef.current = null;
+          setPlayingMessageId(null);
+        };
+        setPlayingMessageId(messageId);
         await audio.play();
         return;
       }
@@ -133,7 +157,11 @@ export default function ChatScreen() {
       await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: "doNotMix", allowsRecording: false, shouldPlayInBackground: false, shouldRouteThroughEarpiece: false });
       const player = createAudioPlayer({ uri: audioFile.uri });
       playerRef.current = player;
+      player.addListener('playbackStatusUpdate', (status: AudioStatus) => {
+        if (status.didJustFinish) setPlayingMessageId(null);
+      });
       player.play();
+      setPlayingMessageId(messageId);
     } catch {
       // Non-critical — silently ignore playback errors
     }
@@ -246,15 +274,20 @@ export default function ChatScreen() {
         tutor: payload.tutor_response,
         audio: payload.response_audio,
       };
+
       setMessages((prev) => {
         const updated = prev
           .filter((m) => m.id !== "loading")
           .map((m) => m.id === userMessage.id ? { ...m, tutor: payload.tutor_response } : m);
         return [...updated, tutorMessage];
       });
+
       setSendingMessage(false);
       scrollToBottom();
-      if (payload.response_audio) void playResponseAudio(payload.response_audio);
+
+      if (payload.response_audio)
+        void playResponseAudio(payload.response_audio, tutorMessage.id);
+      
     } catch (error) {
       setSendingMessage(false);
       setMessages((prev) => [
@@ -302,7 +335,9 @@ export default function ChatScreen() {
           <TutorBubble
           tutor={item.tutor}
           onTranslate={scrollToBottom}
-          onReplay={item.audio ? () => void playResponseAudio(item.audio!) : undefined}
+          onPlay={item.audio ? () => void playResponseAudio(item.audio!, item.id) : undefined}
+          onStop={item.audio ? stopAudio : undefined}
+          isPlaying={playingMessageId === item.id}
         />
         </View>
       </View>
