@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from langchain_mistralai.chat_models import ChatMistralAI
+from langchain_openai import ChatOpenAI
+# from langchain_mistralai.chat_models import ChatMistralAI
 
 from app.agents.reviewer import Reviewer
 from app.agents.runner import Runner
@@ -17,15 +18,18 @@ from pydantic import SecretStr
 
 load_dotenv()
 
-raw_api_key = os.getenv("MISTRAL_API_KEY")
+raw_api_key = os.getenv("OPENAI_API_KEY")
 API_KEY = SecretStr(raw_api_key) if raw_api_key else None
 
+# TUTOR_MODEL_NAME = "gpt-4.1"
+TUTOR_MODEL_NAME = "gpt-5.4-mini"
+# REVIEWER_MODEL_NAME = "gpt-4.1"
+REVIEWER_MODEL_NAME = "gpt-5.4-nano"
 
-TUTOR_MODEL = ChatMistralAI(api_key=API_KEY)
-# TUTOR_MODEL = ChatOllama(model="mistral-large-3:675b-cloud")
-
-REVIEWER_MODEL = ChatMistralAI(api_key=API_KEY)
-# REVIEWER_MODEL = ChatOllama(model="mistral-large-3:675b-cloud")
+TUTOR_MODEL = ChatOpenAI(model=TUTOR_MODEL_NAME, api_key=API_KEY)
+REVIEWER_MODEL = ChatOpenAI(model=REVIEWER_MODEL_NAME, api_key=API_KEY)
+# TUTOR_MODEL = ChatMistralAI(api_key=SecretStr(os.getenv("MISTRAL_API_KEY") or ""))
+# REVIEWER_MODEL = ChatMistralAI(api_key=SecretStr(os.getenv("MISTRAL_API_KEY") or ""))
 
 
 def resolve_episode_dir() -> Path:

@@ -24,6 +24,14 @@ def load_episode_vocabulary_into_session(episode: int) -> None:
     ))
     _tutor_core_instance.session_state.vocabulary = unlocked_words
 
+    current_episode_words = (
+        _tutor_core_instance
+        .session_manager
+        .get_unlocked_words_from_episodes(
+            start=episode, end=episode
+    ))
+    _tutor_core_instance.session_state.episode_vocabulary = current_episode_words
+
 
 def build_episode_response(episode: int) -> EpisodeResponse:
     load_episode_vocabulary_into_session(episode)

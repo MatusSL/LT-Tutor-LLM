@@ -29,9 +29,10 @@ class Tutor(TutorProtocol):
 
     def reply(self, user_input: str, context: List[Context], vocabulary: Set[str]) -> Tuple[str, TutorResponse]:
         conversation = "\n".join(f"{m.role}: {m.content}" for m in context)
+        vocab_str = ", ".join(sorted(vocabulary)) if vocabulary else "(none yet)"
 
         prompt = MERGED_TUTOR_PROMPT.format(
-            vocabulary=vocabulary, history=conversation, user_input=user_input
+            vocabulary=vocab_str, history=conversation, user_input=user_input
         )
 
         last_raw_response = None

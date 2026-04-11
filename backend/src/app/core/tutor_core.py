@@ -35,7 +35,7 @@ class TutorCore:
         reply, response = self.tutor.reply(
             user_input=user_input,
             context=self.session_state.context,
-            vocabulary=self.session_state.vocabulary,
+            vocabulary=self.session_state.episode_vocabulary,
         )
 
         logger.debug(f"---- Reply ---- \n{reply}\n")

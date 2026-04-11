@@ -13,4 +13,5 @@ class SessionState:
     episodes_dir: Path = field(default_factory=Path)
     context: List[Context] = field(default_factory=list)
     vocabulary: Set[str] = field(default_factory=set)
+    episode_vocabulary: Set[str] = field(default_factory=set)
     is_finished: bool = False

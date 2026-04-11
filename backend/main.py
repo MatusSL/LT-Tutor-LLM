@@ -16,6 +16,10 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s - %(message)s"
 )
 
+# Suppress noisy third-party HTTP internals
+for _noisy in ("httpcore", "httpx", "hpack", "openai", "python_multipart", "asyncio", "faster_whisper"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
