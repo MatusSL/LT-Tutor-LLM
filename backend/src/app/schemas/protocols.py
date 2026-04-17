@@ -1,15 +1,8 @@
 from typing import List, Protocol, Set, Tuple
 
-from langchain_core.runnables import Runnable
-
 from app.schemas.llm import TutorResponse
 from app.schemas.db import DistractionModel, MistakeModel, ReviewData
 from app.schemas.types import UserInputAnalysis, Context
-
-
-class RunnerProtocol(Protocol):
-    def run_agent(self, agent: Runnable, user_input: str) -> str:
-        ...    
 
 
 class ReviewerProtocol(Protocol):

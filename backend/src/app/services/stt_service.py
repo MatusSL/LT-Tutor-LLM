@@ -1,15 +1,21 @@
-from faster_whisper import WhisperModel
+import os
+from openai import OpenAI
 
-_model: WhisperModel | None = None
+_client: OpenAI | None = None
 
 
-def _get_model() -> WhisperModel:
-    global _model
-    if _model is None:
-        _model = WhisperModel("small", device="cpu", compute_type="int8")
-    return _model
+def _get_client() -> OpenAI:
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _client
 
 
 def transcribe(audio_path: str, language: str) -> str:
-    segments, _ = _get_model().transcribe(audio_path, language=language)
-    return " ".join(segment.text for segment in segments).strip()
+    with open(audio_path, "rb") as f:
+        result = _get_client().audio.transcriptions.create(
+            model="whisper-1",
+            file=f,
+            language=language,
+        )
+    return result.text.strip()

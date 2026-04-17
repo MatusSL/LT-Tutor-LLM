@@ -109,10 +109,13 @@ export type Review = {
   review_data: ReviewData
 }
 
+const API_KEY = process.env.EXPO_PUBLIC_API_KEY ?? "";
+
 const requestJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(getApiUrl(path), {
     headers: {
       "Content-Type": "application/json",
+      "X-API-Key": API_KEY,
       ...(init?.headers ?? {}),
     },
     ...init,
@@ -185,6 +188,7 @@ export const transcribeAudio = async (audioUri: string, language: string): Promi
 
   const response = await fetch(getApiUrl("/chat/transcribe"), {
     method: "POST",
+    headers: { "X-API-Key": API_KEY },
     body: formData,
   });
 

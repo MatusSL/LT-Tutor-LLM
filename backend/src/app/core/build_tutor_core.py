@@ -3,7 +3,6 @@ from pathlib import Path
 from langchain_openai import ChatOpenAI
 
 from app.agents.reviewer import Reviewer
-from app.agents.runner import Runner
 from app.agents.tutor import Tutor
 
 from app.core.tutor_core import TutorCore
@@ -35,21 +34,11 @@ def resolve_episode_dir() -> Path:
     episode_dir = current / "LT_Episodes"
     return episode_dir
 
-def setup_tutor_service(runner: Runner) -> Tutor:
-    return Tutor(runner=runner, model=TUTOR_MODEL)
-
-def setup_reviewer_service(runner: Runner) -> Reviewer:
-    return Reviewer(runner=runner, model=REVIEWER_MODEL)
-
 
 def build_tutor_core() -> TutorCore:
-    runner = Runner()
-
-    tutor = setup_tutor_service(runner=runner)
-    reviewer = setup_reviewer_service(runner=runner)
-
+    tutor = Tutor(model=TUTOR_MODEL)
+    reviewer = Reviewer(model=REVIEWER_MODEL)
     vocabulary = Vocabulary()
-
     episode_dir = resolve_episode_dir()
 
     core_services = CoreServices(
