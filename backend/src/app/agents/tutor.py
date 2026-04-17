@@ -43,7 +43,7 @@ class Tutor(TutorProtocol):
                 logger.warning(
                     f"Failed to run the tutor agent on {attempt=}",
                     exc_info=e
-                    )
+                )
                 continue
 
             try:

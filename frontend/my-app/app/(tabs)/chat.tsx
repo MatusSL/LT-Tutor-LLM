@@ -60,7 +60,7 @@ export default function ChatScreen() {
   const [recordSecs, setRecordSecs] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
-  const [language, setLanguage] = useState<"es"|"gb">("es")
+  const [language, setLanguage] = useState<"es"|"en">("es")
 
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
@@ -483,23 +483,21 @@ export default function ChatScreen() {
                 >
                   <Ionicons name="keypad-outline" size={22} color={C.text.secondary} />
                 </TouchableOpacity>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                  <TouchableOpacity
-                    style={[styles.centerMicBtn, (!serverReady || isTranscribing) && styles.actionBtnInactive]}
-                    onPress={toggleRecording}
-                    disabled={sendingMessage || isTranscribing || !serverReady}
-                    activeOpacity={0.8}
-                  >
-                    {isTranscribing ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Ionicons name="mic" size={28} color="#FFFFFF" />
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  style={[styles.centerMicBtn, (!serverReady || isTranscribing) && styles.actionBtnInactive]}
+                  onPress={toggleRecording}
+                  disabled={sendingMessage || isTranscribing || !serverReady}
+                  activeOpacity={0.8}
+                >
+                  {isTranscribing ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="mic" size={28} color="#FFFFFF" />
+                  )}
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.langToggleBtn}
-                  onPress={() => setLanguage((l) => (l === "es" ? "gb" : "es"))}
+                  onPress={() => setLanguage((l) => (l === "es" ? "en" : "es"))}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.langToggleText}>{language == "es" ? "ES" : "EN"}</Text>
@@ -618,9 +616,9 @@ const styles = StyleSheet.create({
   voiceBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 35,
+    justifyContent: "space-between",
+    alignSelf: "stretch",
     flex: 1,
-    justifyContent: "center",
   },
   keyboardToggleBtn: {
     width: 40,

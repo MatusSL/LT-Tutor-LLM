@@ -32,25 +32,21 @@ class Vocabulary(VocabularyProtocol):
         try:
             response = (
                 get_supabase()
-                .table(Table.WORDS)
-                .select("*")
-                .execute()
+                    .table(Table.WORDS)
+                    .select("*")
+                    .execute()
             )
 
             vocabulary = self.get_words_from_response(response)
             return vocabulary
         
         except HTTPError as e:
-            logger.error("Supabase could not be reached.", exc_info=e)
+            logger.error("DB could not be reached.", exc_info=e)
             raise
         
         except APIError as e:
-            code = e.code
-            msg = e.message
-            details = e.details
-
             logger.error(
-                f"Error while fetching vocabulary from database.:\n{msg=}\n{code=}\n{details=}",
+                "Error while fetching vocabulary from database.",
                 exc_info=e
             )
             raise
@@ -60,10 +56,10 @@ class Vocabulary(VocabularyProtocol):
         try:
             (
             get_supabase()
-            .table(Table.USERS)
-            .update({User.MAX_EPISODE: episode})
-            .eq(User.DISPLAY_NAME, "matus")
-            .execute()
+                .table(Table.USERS)
+                .update({ User.MAX_EPISODE: episode })
+                .eq(User.DISPLAY_NAME, "matus")
+                .execute()
             )
         
         except (HTTPError, APIError) as e:
@@ -74,10 +70,10 @@ class Vocabulary(VocabularyProtocol):
         try:
             response = (
                 get_supabase()
-                .table(Table.USERS)
-                .select("*")
-                .eq(User.DISPLAY_NAME, "matus")
-                .execute()
+                    .table(Table.USERS)
+                    .select("*")
+                    .eq(User.DISPLAY_NAME, "matus")
+                    .execute()
             )
             if len(response.data) == 0:
                 return 0
@@ -103,12 +99,12 @@ class Vocabulary(VocabularyProtocol):
         try:
             (
             get_supabase()
-            .table(Table.WORDS)
-            .upsert(
-                payload.model_dump(exclude_none=True),
-                on_conflict="word"
-            )
-            .execute()
+                .table(Table.WORDS)
+                .upsert(
+                    payload.model_dump(exclude_none=True),
+                    on_conflict="word"
+                )
+                .execute()
             )
             
         except (HTTPError, APIError) as e:
@@ -122,12 +118,9 @@ class Vocabulary(VocabularyProtocol):
         try:
             (
             get_supabase()
-            .table(Table.MISTAKES)
-            .upsert(
-                mistake.model_dump(exclude_none=True),
-                on_conflict="origin"
-            )
-            .execute()
+                .table(Table.MISTAKES)
+                .insert(mistake.model_dump(exclude_none=True))
+                .execute()
             )
         except (HTTPError, APIError) as e:
             logger.warning(f"Failed to update {mistake.origin=}", exc_info=e)
@@ -143,9 +136,9 @@ class Vocabulary(VocabularyProtocol):
         try:
             response = (
                 get_supabase()
-                .table(Table.MISTAKES)
-                .select("*")
-                .execute()
+                    .table(Table.MISTAKES)
+                    .select("*")
+                    .execute()
             )
 
             return [MistakeModel.model_validate(row) for row in response.data]

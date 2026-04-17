@@ -74,7 +74,6 @@ class TutorCore:
 
         if error_count > 0:
             self._executor.submit(self.update_error_words, correction)
-        # self.update_error_words(correction=correction)      #? Debugging purposes
 
 
     def update_error_words(self, correction: Correction) -> None:
