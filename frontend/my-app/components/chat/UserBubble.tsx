@@ -8,9 +8,10 @@ type Props = {
   text: string;
   tutor?: TutorResponse;
   onTranslate?: () => void;
+  onCorrection?: () => void;
 };
 
-export function UserBubble({ text, tutor, onTranslate }: Props) {
+export function UserBubble({ text, tutor, onTranslate, onCorrection }: Props) {
   const [showCorrection, setShowCorrection] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
 
@@ -50,7 +51,11 @@ export function UserBubble({ text, tutor, onTranslate }: Props) {
 
         {hasCorrection && (
           <TouchableOpacity
-            onPress={() => setShowCorrection((v) => !v)}
+            onPress={() => {
+              const next = !showCorrection;
+              setShowCorrection(next);
+              if (next) onCorrection?.();
+            }}
             activeOpacity={0.7}
             style={styles.correctionToggle}
           >

@@ -4,7 +4,8 @@ import pytest
 
 from app.core.tutor_core import TutorCore
 from app.schemas.api import ChatResponse
-from app.schemas.db import DistractionModel, Language
+from app.schemas.constants import CoreServices
+from app.schemas.db import DistractionModel, ErrorCorrection, FillBlank, Language, PhraseQuiz
 from app.schemas.llm import Correction, ErrorCandidate
 from app.schemas.llm import TutorResponse
 
@@ -48,21 +49,24 @@ def make_correction(
 
 @pytest.fixture
 def core(tmp_path) -> TutorCore:
-    """TutorCore with all dependencies mocked."""
     mock_tutor = MagicMock()
     mock_reviewer = MagicMock()
     mock_vocabulary = MagicMock()
     mock_vocabulary.words = {"yo", "hola", "bien"}
     mock_reviewer.generate_distractions.return_value = DistractionModel(
-        phrase=[], blank=[], correction=""
+        phrase_quiz=PhraseQuiz(phrase="", correct_answer="", options=[]), 
+        fill_blank=FillBlank(sentence="", correct_word="", blank_index=0, options=[], translation=""),
+        correction=ErrorCorrection(sentence="", error_index=0, corrected_word="", explanation="", error_type="",)
     )
 
-    return TutorCore(
-        tutor=mock_tutor,
-        reviewer=mock_reviewer,
-        vocabulary=mock_vocabulary,
-        episodes_dir=tmp_path,
+    services = CoreServices(
+            tutor=mock_tutor,
+            reviewer=mock_reviewer,
+            vocabulary=mock_vocabulary,
+            episodes_dir=tmp_path,
     )
+
+    return TutorCore(core_services=services)
 
 
 class TestAnalyizeResponse:

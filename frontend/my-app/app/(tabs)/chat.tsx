@@ -64,6 +64,7 @@ export default function ChatScreen() {
 
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
+  const prevMessageCountRef = useRef(0);
   const playerRef = useRef<AudioPlayer | null>(null);
   const webAudioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -110,6 +111,9 @@ export default function ChatScreen() {
 
   const scrollToBottom = () =>
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+
+  const scrollToItem = (index: number) =>
+    setTimeout(() => flatListRef.current?.scrollToIndex({ index, viewPosition: 0, animated: true }), 100);
 
   const stopAudio = () => {
     if (webAudioRef.current) {
@@ -317,13 +321,18 @@ export default function ChatScreen() {
     await sendMessageWithText(text);
   };
 
-  const renderItem = ({ item }: { item: Message }) => {
+  const renderItem = ({ item, index }: { item: Message; index: number }) => {
     if (item.type === "loading") return <LoadingBubble />;
 
     if (item.type === "user") {
       return (
         <View style={styles.messageRowUser}>
-          <UserBubble text={item.text} tutor={item.tutor} onTranslate={scrollToBottom} />
+          <UserBubble
+            text={item.text}
+            tutor={item.tutor}
+            onTranslate={() => scrollToItem(index)}
+            onCorrection={() => scrollToItem(index)}
+          />
         </View>
       );
     }
@@ -335,12 +344,12 @@ export default function ChatScreen() {
         </View>
         <View style={styles.tutorColumn}>
           <TutorBubble
-          tutor={item.tutor}
-          onTranslate={scrollToBottom}
-          onPlay={item.audio ? () => void playResponseAudio(item.audio!, item.id) : undefined}
-          onStop={item.audio ? stopAudio : undefined}
-          isPlaying={playingMessageId === item.id}
-        />
+            tutor={item.tutor}
+            onTranslate={() => scrollToItem(index)}
+            onPlay={item.audio ? () => void playResponseAudio(item.audio!, item.id) : undefined}
+            onStop={item.audio ? stopAudio : undefined}
+            isPlaying={playingMessageId === item.id}
+          />
         </View>
       </View>
     );
@@ -405,7 +414,17 @@ export default function ChatScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.messagesList}
             showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+            onContentSizeChange={() => {
+              if (messages.length > prevMessageCountRef.current) {
+                prevMessageCountRef.current = messages.length;
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }
+            }}
+            onScrollToIndexFailed={(info) => {
+              setTimeout(() => {
+                flatListRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0 });
+              }, 100);
+            }}
           />
 
           <View style={styles.inputArea}>
