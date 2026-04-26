@@ -331,7 +331,6 @@ export default function ChatScreen() {
             text={item.text}
             tutor={item.tutor}
             onTranslate={() => scrollToItem(index)}
-            onCorrection={() => scrollToItem(index)}
           />
         </View>
       );
@@ -357,7 +356,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       <View style={styles.header}>
         <View style={styles.avatarWrapper}>
@@ -368,11 +367,7 @@ export default function ChatScreen() {
         </View>
         <View style={styles.headerInfo}>
           <Text style={styles.headerName}>LT Tutor</Text>
-          <Text style={styles.headerStatus}>
-            {setupStep === "chat" && activeEpisode
-              ? `Episode ${activeEpisode} · active`
-              : "Active now"}
-          </Text>
+          <Text style={styles.headerStatus}>Active now</Text>
         </View>
       </View>
       <View style={styles.divider} />
@@ -581,7 +576,7 @@ const styles = StyleSheet.create({
   },
   headerStatus: {
     fontSize: 12,
-    color: C.green,
+    color: C.text.secondary,
     marginTop: 2,
   },
   divider: {

@@ -13,15 +13,15 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Flashcard } from "@/services/tutor-api";
 
 const C = {
-  bg: "#0F0F13",
-  surface: "#1A1A24",
-  surfaceAlt: "#22222F",
-  border: "rgba(255,255,255,0.07)",
-  accent: "#6C63FF",
-  accentSoft: "rgba(108,99,255,0.15)",
-  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566" },
-  green: "#22C55E",
-  red: "#FF4B6E",
+  bg: '#FAFAF7',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F3F3EF',
+  border: '#EDEDEA',
+  accent: '#2563EB',
+  accentSoft: '#EFF6FF',
+  text: { primary: '#0E0E10', secondary: '#55555C', hint: '#A0A0A8' },
+  green: '#2563EB',
+  red: '#DC2626',
 };
 
 type WordPair = { spanish: string; english: string };
@@ -109,7 +109,7 @@ export default function FlashcardsScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>

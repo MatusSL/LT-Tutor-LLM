@@ -8,20 +8,20 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#1A1A24",
-          borderTopColor: "rgba(255,255,255,0.07)",
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#EDEDEA',
           borderTopWidth: 1,
         },
-        tabBarInactiveTintColor: "#555566",
-        tabBarActiveTintColor: "#6C63FF",
+        tabBarInactiveTintColor: '#A0A0A8',
+        tabBarActiveTintColor: '#2563EB',
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -29,8 +29,8 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: "Chat",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "chatbubble" : "chatbubble-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -38,17 +38,17 @@ export default function TabLayout() {
         name="review"
         options={{
           title: "Review",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="checkmark-circle" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "refresh" : "refresh-outline"} size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="lectures"
         options={{
-          title: "Lectures",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book" size={size} color={color} />
+          title: "Episodes",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "list" : "list-outline"} size={size} color={color} />
           ),
         }}
       />

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
   ListRenderItem,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,41 +19,40 @@ import { C } from "@/constants/colors";
 const EPISODE_COUNT = 90;
 
 export default function LecturesScreen() {
-  const [selectedLecture, setSelectedLecture] = useState(0);
-  const [currentLecture, setCurrentLecture] = useState<number | null>(null)
+  const [selectedEpisode, setSelectedEpisode] = useState(0);
+  const [currentEpisode, setCurrentEpisode] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const lectures = Array.from({ length: EPISODE_COUNT }, (_, i) => i + 1);
+  const episodes = Array.from({ length: EPISODE_COUNT }, (_, i) => i + 1);
 
-  const handlePress = (lecture: number) => {
-    setSelectedLecture(lecture === selectedLecture ? 0 : lecture);
+  const handlePress = (episode: number) => {
+    setSelectedEpisode(episode === selectedEpisode ? 0 : episode);
   };
 
   useEffect(() => {
     const fetchCurrentEpisode = async () => {
-      setLoading(true)
-      setError(null)
+      setError(null);
       try {
-        const payload = await requestCurrentEpisode()
-        setCurrentLecture(payload.episode)
-        setSelectedLecture(payload.episode)
-      } catch(err) {
-        setError("Could not load current episode.")
+        const payload = await requestCurrentEpisode();
+        setCurrentEpisode(payload.episode);
+        setSelectedEpisode(payload.episode);
+      } catch {
+        setError("Could not load current episode.");
       } finally {
-        setLoading(false)
+        setInitialLoading(false);
       }
-    }
-
-    void fetchCurrentEpisode()
-  }, [])
+    };
+    void fetchCurrentEpisode();
+  }, []);
 
   const handleConfirm = async () => {
-    if (selectedLecture === 0 || loading) return;
+    if (selectedEpisode === 0 || loading) return;
     setLoading(true);
     setError(null);
     try {
-      await requestEpisodeTopics(selectedLecture);
+      await requestEpisodeTopics(selectedEpisode);
       router.push("/chat");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load episode topics.");
@@ -61,51 +61,102 @@ export default function LecturesScreen() {
     }
   };
 
+  const progressPercent = Math.min((selectedEpisode / EPISODE_COUNT) * 100, 100);
+
   const renderItem: ListRenderItem<number> = ({ item }) => {
-    const isSelected = item <= selectedLecture;
-    
+    const isCompleted = item < selectedEpisode;
+    const isActive = item === selectedEpisode;
+
     return (
-      <Pressable style={styles.row} onPress={() => handlePress(item)}>
-        <Text style={styles.rowText}>Episode {item}</Text>
-        <View style={[styles.circle, isSelected ? styles.circleSelected : styles.circleUnselected]} />
+      <Pressable
+        style={[styles.row, isActive && styles.rowActive]}
+        onPress={() => handlePress(item)}
+      >
+        <View style={styles.rowLeft}>
+          <Text style={[styles.rowText, isActive && styles.rowTextActive]}>
+            Episode {item}
+          </Text>
+          {isActive && (
+            <View style={styles.activeBadge}>
+              <Text style={styles.activeBadgeText}>Active</Text>
+            </View>
+          )}
+        </View>
+        {isCompleted ? (
+          <View style={[styles.circle, styles.circleCompleted]}>
+            <Ionicons name="checkmark" size={13} color="#fff" />
+          </View>
+        ) : isActive ? (
+          <View style={[styles.circle, styles.circleActive]} />
+        ) : (
+          <View style={[styles.circle, styles.circleUnselected]} />
+        )}
       </Pressable>
     );
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Lectures</Text>
-        <TouchableOpacity
-          onPress={() => void handleConfirm()}
-          activeOpacity={0.7}
-          disabled={selectedLecture === 0 || loading}
-        >
-          <Ionicons
-            name="checkmark"
-            size={22}
-            color={selectedLecture === 0 || loading ? C.text.hint : C.accent}
-          />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Episodes</Text>
       </View>
       <View style={styles.divider} />
 
-      <Text style={styles.subtitle}>
-        Mark the last episode you completed — all prior episodes count as done.
-      </Text>
+      {initialLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={C.accent} />
+        </View>
+      ) : (
+        <>
+          {/* Progress card */}
+          <View style={styles.progressCard}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressLabel}>Progress</Text>
+              <Text style={styles.progressCount}>
+                {selectedEpisode} of {EPISODE_COUNT} complete
+              </Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+            </View>
+          </View>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
-      <FlatList
-        data={lectures}
-        keyExtractor={(item) => item.toString()}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+          <FlatList
+            data={episodes}
+            keyExtractor={(item) => item.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+
+          {/* Start Session button */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[
+                styles.startBtn,
+                (selectedEpisode === 0 || loading) && styles.startBtnDisabled,
+              ]}
+              onPress={() => void handleConfirm()}
+              disabled={selectedEpisode === 0 || loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.startBtnText}>
+                  {selectedEpisode > 0
+                    ? `Start Session — Episode ${selectedEpisode}`
+                    : "Select an episode"}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -133,13 +184,49 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: C.border,
   },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    backgroundColor: C.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+    gap: 10,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  progressLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
     color: C.text.secondary,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 6,
+  },
+  progressCount: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.text.primary,
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: C.surfaceAlt,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: C.accent,
+    borderRadius: 3,
   },
   errorText: {
     color: "#FF6B6B",
@@ -149,7 +236,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   row: {
     flexDirection: "row",
@@ -159,22 +247,75 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
   },
+  rowActive: {
+    // no background change, just badge and text color
+  },
+  rowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   rowText: {
     fontSize: 16,
     color: C.text.primary,
+  },
+  rowTextActive: {
+    fontWeight: "700",
+    color: C.accent,
+  },
+  activeBadge: {
+    backgroundColor: C.accentSoft,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  activeBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: C.accent,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
   circle: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
   circleUnselected: {
     borderColor: C.text.hint,
     backgroundColor: "transparent",
   },
-  circleSelected: {
+  circleActive: {
+    borderColor: C.accent,
+    backgroundColor: "transparent",
+  },
+  circleCompleted: {
     borderColor: C.accent,
     backgroundColor: C.accent,
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 20,
+    backgroundColor: C.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: C.border,
+  },
+  startBtn: {
+    backgroundColor: C.accent,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  startBtnDisabled: {
+    opacity: 0.4,
+  },
+  startBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

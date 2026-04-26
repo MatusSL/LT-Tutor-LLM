@@ -5,7 +5,7 @@ export default function ReviewLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#0F0F13" },
+        contentStyle: { backgroundColor: '#FAFAF7' },
         animation: "slide_from_right",
       }}
     />

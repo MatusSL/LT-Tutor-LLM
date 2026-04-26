@@ -1,21 +1,28 @@
 import { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { checkTutorServer } from "@/services/tutor-api";
 
-const C = {
-  bg: "#0F0F13",
-  surface: "#1A1A24",
-  surfaceAlt: "#22222F",
-  border: "rgba(255,255,255,0.07)",
-  accent: "#6C63FF",
-  accentSoft: "rgba(108,99,255,0.15)",
-  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566" },
-  green: "#22C55E",
-  red: "#FF4B6E",
+const SH = {
+  bg: '#FAFAF7',
+  panel: '#FFFFFF',
+  ink: '#0E0E10',
+  inkSoft: '#55555C',
+  muted: '#A0A0A8',
+  line: '#EDEDEA',
+  accent: '#2563EB',
+  accentBg: '#EFF6FF',
+  warn: '#B8590F',
+  warnBg: '#F5EADB',
 };
+
+const MISTAKES = [
+  { word: 'ser vs. estar', freq: '4×', cat: 'grammar' },
+  { word: 'la mano', freq: '2×', cat: 'gender' },
+  { word: 'preterite -ar', freq: '2×', cat: 'conjugation' },
+];
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -27,87 +34,99 @@ export default function HomeScreen() {
       .catch(() => setServerOnline(false));
   }, []);
 
+  const serverColor =
+    serverOnline === null ? SH.muted : serverOnline ? SH.accent : '#E16C75';
+
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerAvatar}>
-          <Text style={styles.headerAvatarText}>LT</Text>
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>LT Tutor</Text>
-          <View style={styles.statusRow}>
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: serverOnline === null ? C.text.hint : serverOnline ? C.green : C.red },
-              ]}
-            />
-            <Text style={styles.headerStatus}>
-              {serverOnline === null ? "Connecting…" : serverOnline ? "Server online" : "Server offline"}
-            </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>LT</Text>
+            </View>
+            <Text style={styles.workspaceLabel}>Workspace</Text>
+          </View>
+          <View style={styles.headerRight}>
+            <View style={[styles.serverDot, { backgroundColor: serverColor }]} />
+            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+              <Ionicons name="settings-outline" size={15} color={SH.inkSoft} />
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
-      <View style={styles.divider} />
 
-      <View style={styles.body}>
-        {/* Brand block */}
-        <View style={styles.brand}>
-          <Text style={styles.brandTitle}>Spanish Tutor</Text>
-          <Text style={styles.brandSubtitle}>
-            Practice conversation, track vocabulary, and learn from corrections.
-          </Text>
+        {/* Primary actions */}
+        <View style={styles.panel}>
+          <TouchableOpacity
+            style={[styles.actionRow, styles.rowDivider]}
+            onPress={() => router.push('/chat')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: SH.accentBg }]}>
+              <Ionicons name="play" size={14} color={SH.accent} />
+            </View>
+            <View style={styles.actionText}>
+              <Text style={styles.actionTitle}>Continue session</Text>
+              <Text style={styles.actionSub}>Start or resume your tutor session</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={SH.muted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionRow, styles.rowDivider]}
+            onPress={() => router.push('/review')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: SH.line }]}>
+              <Ionicons name="layers-outline" size={15} color={SH.ink} />
+            </View>
+            <View style={styles.actionText}>
+              <Text style={styles.actionTitle}>Review queue</Text>
+              <Text style={styles.actionSub}>Flashcards, quizzes &amp; exercises</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={SH.muted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={() => router.push('/lectures')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: SH.line }]}>
+              <Ionicons name="book-outline" size={15} color={SH.ink} />
+            </View>
+            <View style={styles.actionText}>
+              <Text style={styles.actionTitle}>Episodes</Text>
+              <Text style={styles.actionSub}>Select completed lectures</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={SH.muted} />
+          </TouchableOpacity>
         </View>
 
-        {/* Action cards */}
-        <TouchableOpacity
-          style={styles.primaryCard}
-          onPress={() => router.push("/chat")}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardIconBg}>
-            <Ionicons name="chatbubble" size={22} color={C.accent} />
+        {/* Recent mistakes */}
+        <View style={[styles.panel, styles.mistakesPanel]}>
+          <View style={styles.mistakesHeader}>
+            <Text style={styles.mistakesLabel}>RECENT MISTAKES · {MISTAKES.length}</Text>
+            <TouchableOpacity onPress={() => router.push('/review')} activeOpacity={0.7}>
+              <Text style={styles.drillLink}>Review →</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>Start practicing</Text>
-            <Text style={styles.cardDesc}>Have a bilingual conversation with your tutor</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={C.text.hint} />
-        </TouchableOpacity>
+          {MISTAKES.map((item, i) => (
+            <View key={i} style={styles.mistakeRow}>
+              <View style={styles.mistakeDot} />
+              <Text style={styles.mistakeWord}>{item.word}</Text>
+              <Text style={styles.mistakeCat}>{item.cat}</Text>
+              <View style={styles.mistakeFreqBadge}>
+                <Text style={styles.mistakeFreqText}>{item.freq}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
 
-        <TouchableOpacity
-          style={styles.secondaryCard}
-          onPress={() => router.push("/review")}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardIconBg}>
-            <Ionicons name="checkmark-circle" size={22} color={C.accent} />
-          </View>
-          <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>Review vocabulary</Text>
-            <Text style={styles.cardDesc}>Browse words and phrases from past sessions</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={C.text.hint} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.secondaryCard}
-          onPress={() => router.push("/lectures")}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cardIconBg}>
-            <Ionicons name="book" size={22} color={C.accent} />
-          </View>
-          <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>Select lectures</Text>
-            <Text style={styles.cardDesc}>Mark completed episodes to unlock vocabulary</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={C.text.hint} />
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -115,115 +134,164 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: SH.bg,
   },
+  scroll: {
+    paddingBottom: 24,
+  },
+
+  // Header
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: 12,
     paddingBottom: 14,
-    backgroundColor: C.surface,
-    gap: 12,
   },
-  headerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: C.accent,
-    alignItems: "center",
-    justifyContent: "center",
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  headerAvatarText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 17,
+  badge: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    backgroundColor: SH.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerInfo: {
-    flex: 1,
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
-  headerName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: C.text.primary,
+  workspaceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: SH.ink,
   },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 2,
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  statusDot: {
+  serverDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
   },
-  headerStatus: {
-    fontSize: 12,
-    color: C.text.secondary,
+  iconBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: SH.panel,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: SH.line,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: C.border,
+
+  // Panel card
+  panel: {
+    marginHorizontal: 14,
+    backgroundColor: SH.panel,
+    borderWidth: 1,
+    borderColor: SH.line,
+    borderRadius: 14,
+    overflow: 'hidden',
   },
-  body: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 32,
+  mistakesPanel: {
+    marginTop: 10,
+    paddingTop: 12,
+  },
+
+  // Action rows
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     gap: 12,
   },
-  brand: {
-    marginBottom: 12,
+  rowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: SH.line,
   },
-  brandTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: C.text.primary,
-    marginBottom: 8,
+  actionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  brandSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: C.text.secondary,
-  },
-  primaryCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.accent,
-    borderRadius: 18,
-    padding: 16,
-    gap: 14,
-  },
-  secondaryCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.surface,
-    borderRadius: 18,
-    padding: 16,
-    gap: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.border,
-  },
-  cardIconBg: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardText: {
+  actionText: {
     flex: 1,
   },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    marginBottom: 2,
+  actionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: SH.ink,
   },
-  cardDesc: {
+  actionSub: {
+    fontSize: 12,
+    color: SH.inkSoft,
+    marginTop: 1,
+  },
+
+  // Mistakes panel
+  mistakesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  mistakesLabel: {
+    fontSize: 10,
+    color: SH.muted,
+    letterSpacing: 0.5,
+    fontWeight: '600',
+  },
+  drillLink: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: SH.ink,
+  },
+  mistakeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: SH.line,
+    gap: 10,
+  },
+  mistakeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: SH.warn,
+  },
+  mistakeWord: {
+    flex: 1,
     fontSize: 13,
-    color: "rgba(255,255,255,0.65)",
-    lineHeight: 18,
+    color: SH.ink,
+  },
+  mistakeCat: {
+    fontSize: 11,
+    color: SH.inkSoft,
+  },
+  mistakeFreqBadge: {
+    backgroundColor: SH.warnBg,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  mistakeFreqText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: SH.warn,
   },
 });

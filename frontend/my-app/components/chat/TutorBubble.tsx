@@ -67,6 +67,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.bubble.in,
     borderRadius: 18,
     borderBottomLeftRadius: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },

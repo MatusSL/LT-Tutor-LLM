@@ -1,19 +1,10 @@
-import { View, Text, StyleSheet, StatusBar, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, StatusBar, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { BlankWord, ErrorCorrection, Flashcard, PhraseQuiz, requestReviewData, ReviewData } from "@/services/tutor-api";
+import { BlankWord, ErrorCorrection, Flashcard, PhraseQuiz, requestReviewData } from "@/services/tutor-api";
 import { useEffect, useState } from "react";
-
-const C = {
-  bg: "#0F0F13",
-  surface: "#1A1A24",
-  surfaceAlt: "#22222F",
-  border: "rgba(255,255,255,0.07)",
-  accent: "#6C63FF",
-  accentSoft: "rgba(108,99,255,0.15)",
-  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566", error: "#E16C75" },
-};
+import { C } from "@/constants/colors";
 
 type ReviewMode = {
   title: string;
@@ -50,20 +41,24 @@ const MODES: ReviewMode[] = [
 ];
 
 type ReviewModel = {
-  flashcards: Flashcard[] | null,
-  phraseQuiz: PhraseQuiz[] | null,
-  blankWords: BlankWord[] | null,
-  errorCorrections: ErrorCorrection[] | null
-}
+  flashcards: Flashcard[] | null;
+  phraseQuiz: PhraseQuiz[] | null;
+  blankWords: BlankWord[] | null;
+  errorCorrections: ErrorCorrection[] | null;
+};
 
-function ModeCard({ mode, onPress }: { mode: ReviewMode; onPress: () => void }) {
-
+function ModeCard({ mode, count, onPress }: { mode: ReviewMode; count: number; onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.cardIcon}>
         <Ionicons name={mode.icon} size={26} color={C.accent} />
       </View>
-      <Text style={styles.cardTitle}>{mode.title}</Text>
+      <View style={styles.cardTitleRow}>
+        <Text style={styles.cardTitle}>{mode.title}</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{count}</Text>
+        </View>
+      </View>
       <Text style={styles.cardDesc}>{mode.description}</Text>
     </TouchableOpacity>
   );
@@ -71,81 +66,99 @@ function ModeCard({ mode, onPress }: { mode: ReviewMode; onPress: () => void }) 
 
 export default function ReviewScreen() {
   const router = useRouter();
-  const [review, setReview] = useState<ReviewModel | null>(null)
-  const [error, setError] = useState<Error | null>(null)
+  const [review, setReview] = useState<ReviewModel | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const reviewDataByRoute: Record<string, unknown> = {
+  useEffect(() => {
+    setError(null);
+    const fetchReviewData = async () => {
+      try {
+        const reviewData = await requestReviewData();
+        const data = reviewData.review_data;
+        setReview({
+          flashcards: data.flashcards,
+          phraseQuiz: data.phrase_quiz,
+          blankWords: data.blank_words,
+          errorCorrections: data.error_corrections,
+        });
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    void fetchReviewData();
+  }, []);
+
+  const dataByRoute: Record<string, unknown> = {
     "/review/flashcards": review?.flashcards,
     "/review/phrase-quiz": review?.phraseQuiz,
     "/review/fill-blank": review?.blankWords,
     "/review/error-correction": review?.errorCorrections,
   };
 
-  useEffect(() => {
-    setError(null)
+  const countByRoute: Record<string, number> = {
+    "/review/flashcards": review?.flashcards?.length ?? 0,
+    "/review/phrase-quiz": review?.phraseQuiz?.length ?? 0,
+    "/review/fill-blank": review?.blankWords?.length ?? 0,
+    "/review/error-correction": review?.errorCorrections?.length ?? 0,
+  };
 
-    const fetchReviewData = async () => {
-      try {
-        const reviewData = await requestReviewData()
-        // console.log(reviewData.review_data)
-        const data = reviewData.review_data
-        setReview({
-          flashcards: data.flashcards,
-          phraseQuiz: data.phrase_quiz,
-          blankWords: data.blank_words,
-          errorCorrections: data.error_corrections
-        })
-
-      } catch(error) {
-        console.log(error)
-        setError(error as Error)
-      }
-    }
-
-    fetchReviewData()
-  }, [])
-
+  const totalItems = review
+    ? (review.flashcards?.length ?? 0) +
+      (review.phraseQuiz?.length ?? 0) +
+      (review.blankWords?.length ?? 0) +
+      (review.errorCorrections?.length ?? 0)
+    : 0;
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Review</Text>
       </View>
       <View style={styles.divider} />
-      {error && 
-        <View>
-          <Text style={styles.error}>Fetching review from Supabase failed</Text>
-        </View>
-      }
 
       <View style={styles.body}>
-        <Text style={styles.sectionTitle}>Choose a practice mode</Text>
-
-        <View style={styles.grid}>
-          {MODES.map((mode) => (
-            <ModeCard
-              key={mode.route}
-              mode={mode}
-              onPress={() =>
-                router.push({
-                  pathname: mode.route as never,
-                  params: { data: JSON.stringify(reviewDataByRoute[mode.route] ?? []) },
-                })
-              }
-            />
-          ))}
-        </View>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={C.accent} />
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="cloud-offline-outline" size={36} color={C.text.hint} />
+            <Text style={styles.errorText}>Could not load review data</Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>
+              {totalItems > 0 ? `${totalItems} items due for review` : "Choose a practice mode"}
+            </Text>
+            <View style={styles.grid}>
+              {MODES.map((mode) => (
+                <ModeCard
+                  key={mode.route}
+                  mode={mode}
+                  count={countByRoute[mode.route]}
+                  onPress={() =>
+                    router.push({
+                      pathname: mode.route as never,
+                      params: { data: JSON.stringify(dataByRoute[mode.route] ?? []) },
+                    })
+                  }
+                />
+              ))}
+            </View>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  error: {
-    color: C.text.error
-  },
   safe: {
     flex: 1,
     backgroundColor: C.bg,
@@ -169,6 +182,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 24,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  errorText: {
+    color: C.text.secondary,
+    fontSize: 15,
   },
   sectionTitle: {
     fontSize: 15,
@@ -201,10 +229,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 2,
   },
+  cardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
+  },
   cardTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: C.text.primary,
+    flexShrink: 1,
+  },
+  countBadge: {
+    backgroundColor: C.accentSoft,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  countText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: C.accent,
   },
   cardDesc: {
     fontSize: 13,

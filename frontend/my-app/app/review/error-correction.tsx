@@ -12,17 +12,17 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { ErrorCorrection } from "@/services/tutor-api";
 
 const C = {
-  bg: "#0F0F13",
-  surface: "#1A1A24",
-  surfaceAlt: "#22222F",
-  border: "rgba(255,255,255,0.07)",
-  accent: "#6C63FF",
-  accentSoft: "rgba(108,99,255,0.15)",
-  text: { primary: "#E8E8F0", secondary: "#888899", hint: "#555566" },
-  green: "#22C55E",
-  greenSoft: "rgba(34,197,94,0.12)",
-  red: "#FF4B6E",
-  redSoft: "rgba(255,75,110,0.12)",
+  bg: '#FAFAF7',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F3F3EF',
+  border: '#EDEDEA',
+  accent: '#2563EB',
+  accentSoft: '#EFF6FF',
+  text: { primary: '#0E0E10', secondary: '#55555C', hint: '#A0A0A8' },
+  green: '#2563EB',
+  greenSoft: '#EFF6FF',
+  red: '#DC2626',
+  redSoft: '#FEF2F2',
 };
 
 type ErrorQuestion = {
@@ -100,7 +100,7 @@ export default function ErrorCorrectionScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>

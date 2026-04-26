@@ -2,7 +2,36 @@ import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { C } from "@/constants/colors";
 import { LangIcon } from "./LangIcon";
-import type { TutorResponse } from "./types";
+import type { ErrorCandidate, TutorResponse } from "./types";
+
+type Segment =
+  | { type: "normal"; text: string }
+  | { type: "error"; wrong: string; corrected: string };
+
+function buildSegments(text: string, errors: ErrorCandidate[]): Segment[] {
+  const sorted = [...errors].sort((a, b) => a.span[0] - b.span[0]);
+  const segments: Segment[] = [];
+  let cursor = 0;
+
+  for (const err of sorted) {
+    const [start, end] = err.span;
+    if (start > cursor) {
+      segments.push({ type: "normal", text: text.slice(cursor, start) });
+    }
+    segments.push({
+      type: "error",
+      wrong: text.slice(start, end),
+      corrected: err.correction,
+    });
+    cursor = end;
+  }
+
+  if (cursor < text.length) {
+    segments.push({ type: "normal", text: text.slice(cursor) });
+  }
+
+  return segments;
+}
 
 type Props = {
   text: string;
@@ -12,8 +41,8 @@ type Props = {
 };
 
 export function UserBubble({ text, tutor, onTranslate, onCorrection }: Props) {
-  const [showCorrection, setShowCorrection] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showCorrection, setShowCorrection] = useState(false);
 
   const hasCorrection = !!tutor?.correction;
   const translationText = tutor
@@ -22,11 +51,29 @@ export function UserBubble({ text, tutor, onTranslate, onCorrection }: Props) {
       : tutor.input_spanish
     : null;
 
+  const segments = hasCorrection
+    ? buildSegments(text, tutor!.correction!.error_candidates)
+    : null;
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.bubble}>
-        <View style={styles.innerRow}>
-          <Text style={styles.text}>{text}</Text>
+        {/* Text row — use View+flexWrap so textDecorationLine renders correctly
+            on each standalone Text (nested Text breaks strikethrough on RN) */}
+        <View style={styles.textRow}>
+          {segments
+            ? segments.map((seg, i) =>
+                seg.type === "normal" ? (
+                  <Text key={i} style={styles.text}>{seg.text}</Text>
+                ) : (
+                  <View key={i} style={styles.errorPair}>
+                    <Text style={[styles.text, styles.wrongWord]}>{seg.wrong}</Text>
+                    <Text style={[styles.text, styles.correctedWord]}> {seg.corrected}</Text>
+                  </View>
+                )
+              )
+            : <Text style={styles.text}>{text}</Text>
+          }
           {translationText && (
             <TouchableOpacity
               onPress={() => {
@@ -68,15 +115,16 @@ export function UserBubble({ text, tutor, onTranslate, onCorrection }: Props) {
 
       {showCorrection && tutor?.correction && (
         <View style={styles.correctionBox}>
-          <Text style={styles.correctionLabel}>Corrected</Text>
-          <Text style={styles.correctionFixed}>{tutor.correction.corrected}</Text>
           {tutor.correction.error_candidates.map((ec, index) => (
-            <View key={index} style={styles.errorItem}>
+            <View key={index} style={index > 0 ? styles.errorItemSpaced : undefined}>
               <View style={styles.errorItemHeader}>
-                <Text style={styles.errorWord}>&quot;{ec.word}&quot;</Text>
+                <Text style={styles.errorArrow}>
+                  <Text style={styles.errorWrongInline}>{ec.word}</Text>
+                  <Text style={styles.errorArrowText}>{" → "}</Text>
+                  <Text style={styles.errorCorrectInline}>{ec.correction}</Text>
+                </Text>
                 <Text style={styles.errorType}>{ec.error_type}</Text>
               </View>
-              <Text style={styles.errorSuggestion}>{ec.suggested_correction}</Text>
               <Text style={styles.errorExplanation}>{ec.explanation}</Text>
             </View>
           ))}
@@ -97,15 +145,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  innerRow: {
+  // Wrap in a View so each Text is a direct child → textDecorationLine works
+  textRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    flexWrap: "wrap",
+    alignItems: "center",
   },
   text: {
-    flexShrink: 1,
     color: C.bubble.outText,
     fontSize: 16,
     lineHeight: 22,
+  },
+  errorPair: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  wrongWord: {
+    textDecorationLine: "line-through",
+    textDecorationColor: "#DC2626",
+    color: "rgba(255,255,255,0.45)",
+  },
+  correctedWord: {
+    color: "#4ADE80",
+    fontWeight: "700",
   },
   langBtn: {
     width: 26,
@@ -113,8 +175,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 8,
-    marginTop: -1,
+    marginLeft: 4,
   },
   langBtnActive: {
     backgroundColor: "rgba(255,255,255,0.16)",
@@ -146,43 +207,36 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.border,
   },
-  correctionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    color: C.text.secondary,
-    marginBottom: 6,
-    letterSpacing: 0.8,
-  },
-  correctionFixed: {
-    fontSize: 15,
-    color: C.text.primary,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  errorItem: {
-    marginTop: 8,
+  errorItemSpaced: {
+    marginTop: 12,
   },
   errorItemHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 2,
+    alignItems: "center",
+    marginBottom: 4,
   },
-  errorWord: {
+  errorArrow: {
+    fontSize: 15,
+  },
+  errorWrongInline: {
     color: C.text.primary,
     fontWeight: "600",
-    fontSize: 14,
+    fontSize: 15,
+  },
+  errorArrowText: {
+    color: C.text.secondary,
+    fontSize: 15,
+  },
+  errorCorrectInline: {
+    color: C.accent,
+    fontWeight: "700",
+    fontSize: 15,
   },
   errorType: {
     color: C.text.secondary,
     textTransform: "capitalize",
-    fontSize: 13,
-  },
-  errorSuggestion: {
-    color: C.accent,
-    fontWeight: "600",
-    marginBottom: 2,
-    fontSize: 14,
+    fontSize: 12,
   },
   errorExplanation: {
     color: C.text.secondary,
