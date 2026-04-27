@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { C } from "@/constants/colors";
 import { LangIcon } from "./LangIcon";
@@ -8,22 +8,114 @@ type Segment =
   | { type: "normal"; text: string }
   | { type: "error"; wrong: string; corrected: string };
 
+function isWordChar(char: string) {
+  return /[\p{L}\p{N}_]/u.test(char);
+}
+
+function expandToWordBoundaries(text: string, start: number, end: number) {
+  let expandedStart = start;
+  let expandedEnd = end;
+
+  while (expandedStart > 0 && isWordChar(text[expandedStart - 1])) {
+    expandedStart -= 1;
+  }
+
+  while (expandedEnd < text.length && isWordChar(text[expandedEnd])) {
+    expandedEnd += 1;
+  }
+
+  return [expandedStart, expandedEnd] as const;
+}
+
+function findClosest(text: string, needle: string, target: number) {
+  if (!needle) return null;
+
+  let best: readonly [number, number] | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  let fromIndex = 0;
+
+  while (fromIndex <= text.length) {
+    const index = text.indexOf(needle, fromIndex);
+    if (index === -1) break;
+
+    const distance = Math.abs(index - target);
+    if (distance < bestDistance) {
+      best = [index, index + needle.length] as const;
+      bestDistance = distance;
+    }
+
+    fromIndex = index + 1;
+  }
+
+  return best;
+}
+
+function normalizeErrorSpan(text: string, err: ErrorCandidate) {
+  if (err.span.length < 2) return null;
+
+  let start = Math.max(0, Math.min(err.span[0], text.length));
+  let end = Math.max(start, Math.min(err.span[1], text.length));
+  let wrong = text.slice(start, end);
+
+  if (wrong !== err.word) {
+    const closest = findClosest(text, err.word, start);
+    if (closest) {
+      [start, end] = closest;
+      wrong = text.slice(start, end);
+    } else {
+      const [expandedStart, expandedEnd] = expandToWordBoundaries(text, start, end);
+      const expandedWrong = text.slice(expandedStart, expandedEnd);
+      const expected = err.word.trim();
+      const current = wrong.trim();
+      const recoverable =
+        expandedWrong.includes(expected) ||
+        (current ? expected.includes(current) || current.includes(expected) : false);
+
+      if (!recoverable) return null;
+
+      start = expandedStart;
+      end = expandedEnd;
+      wrong = expandedWrong;
+    }
+  }
+
+  const cutsThroughWord =
+    (start > 0 && isWordChar(text[start - 1])) ||
+    (end < text.length && isWordChar(text[end]));
+
+  if (cutsThroughWord) {
+    [start, end] = expandToWordBoundaries(text, start, end);
+    wrong = text.slice(start, end);
+  }
+
+  if (start === end || !wrong.trim()) return null;
+
+  return { start, end, wrong, corrected: err.correction };
+}
+
 function buildSegments(text: string, errors: ErrorCandidate[]): Segment[] {
-  const sorted = [...errors].sort((a, b) => a.span[0] - b.span[0]);
+  const sorted = errors
+    .map((err) => normalizeErrorSpan(text, err))
+    .filter((err): err is NonNullable<typeof err> => err !== null)
+    .sort((a, b) => a.start - b.start);
   const segments: Segment[] = [];
   let cursor = 0;
 
   for (const err of sorted) {
-    const [start, end] = err.span;
-    if (start > cursor) {
-      segments.push({ type: "normal", text: text.slice(cursor, start) });
+    if (err.start < cursor) {
+      continue;
     }
+
+    if (err.start > cursor) {
+      segments.push({ type: "normal", text: text.slice(cursor, err.start) });
+    }
+
     segments.push({
       type: "error",
-      wrong: text.slice(start, end),
-      corrected: err.correction,
+      wrong: err.wrong,
+      corrected: err.corrected,
     });
-    cursor = end;
+    cursor = err.end;
   }
 
   if (cursor < text.length) {
@@ -58,22 +150,22 @@ export function UserBubble({ text, tutor, onTranslate, onCorrection }: Props) {
   return (
     <View style={styles.wrapper}>
       <View style={styles.bubble}>
-        {/* Text row — use View+flexWrap so textDecorationLine renders correctly
-            on each standalone Text (nested Text breaks strikethrough on RN) */}
         <View style={styles.textRow}>
-          {segments
-            ? segments.map((seg, i) =>
-                seg.type === "normal" ? (
-                  <Text key={i} style={styles.text}>{seg.text}</Text>
-                ) : (
-                  <View key={i} style={styles.errorPair}>
-                    <Text style={[styles.text, styles.wrongWord]}>{seg.wrong}</Text>
-                    <Text style={[styles.text, styles.correctedWord]}> {seg.corrected}</Text>
-                  </View>
+          <Text style={[styles.text, styles.messageText]}>
+            {segments
+              ? segments.map((seg, i) =>
+                  seg.type === "normal" ? (
+                    <Text key={i}>{seg.text}</Text>
+                  ) : (
+                    <Fragment key={i}>
+                      <Text style={styles.wrongWord}>{seg.wrong}</Text>
+                      <Text style={styles.correctedWord}> {seg.corrected}</Text>
+                    </Fragment>
+                  )
                 )
-              )
-            : <Text style={styles.text}>{text}</Text>
-          }
+              : text
+            }
+          </Text>
           {translationText && (
             <TouchableOpacity
               onPress={() => {
@@ -145,20 +237,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  // Wrap in a View so each Text is a direct child → textDecorationLine works
   textRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   text: {
     color: C.bubble.outText,
     fontSize: 16,
     lineHeight: 22,
   },
-  errorPair: {
-    flexDirection: "row",
-    alignItems: "center",
+  messageText: {
+    flexGrow: 1,
+    flexShrink: 1,
   },
   wrongWord: {
     textDecorationLine: "line-through",
@@ -176,6 +266,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,
+    marginTop: -2,
   },
   langBtnActive: {
     backgroundColor: "rgba(255,255,255,0.16)",

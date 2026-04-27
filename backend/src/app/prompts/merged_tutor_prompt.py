@@ -26,7 +26,7 @@ correction:
 
   original: Copy the learner's message exactly as written.
   corrected: The learner's sentence rewritten correctly — not your reply, not a new sentence.
-  error_candidates: Every real mistake found, each with word, span (start/end char indices), error_type, correction, and a short beginner-friendly English explanation.
+  error_candidates: Every real mistake found, each with word, span (start/end char indices), error_type, correction, and a short beginner-friendly English explanation. Spans are zero-based and end-exclusive: original[span[0]:span[1]] must exactly equal word, including every character in multi-word mistakes.
 
 --------------------------------------------------
 CONVERSATION HISTORY

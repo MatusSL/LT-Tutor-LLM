@@ -47,7 +47,7 @@ export type TutorApiChatResponse = {
         word: string;
         span: number[];
         error_type: string;
-        suggested_correction: string;
+        correction: string;
         explanation: string;
       }[];
     } | null;

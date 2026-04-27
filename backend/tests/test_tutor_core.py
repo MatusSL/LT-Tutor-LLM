@@ -201,6 +201,8 @@ class TestHandleMessage:
 
     def test_vocabulary_skipped_when_multiple_errors(self, core):
         correction = make_correction(
+            original="a c",
+            corrected="b d",
             errors=[
                 ErrorCandidate(
                     word="a",
@@ -221,9 +223,9 @@ class TestHandleMessage:
             ]
         )
         self._setup_tutor_reply(
-            core, "mal input", Language.SPANISH, correction=correction
+            core, "a c", Language.SPANISH, correction=correction
         )
-        core.handle_message("mal input")
+        core.handle_message("a c")
         core.vocabulary.verify_and_update_vocabulary.assert_not_called()
 
     def test_vocabulary_updated_when_exactly_one_error(self, core):
