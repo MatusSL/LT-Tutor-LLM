@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 type LLMResponse = Dict[str, Any]
 
+
 @dataclass
 class Context:
     role: str

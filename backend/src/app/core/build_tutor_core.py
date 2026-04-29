@@ -42,10 +42,7 @@ def build_tutor_core() -> TutorCore:
     episode_dir = resolve_episode_dir()
 
     core_services = CoreServices(
-        tutor=tutor,
-        reviewer=reviewer,
-        vocabulary=vocabulary,
-        episodes_dir=episode_dir
+        tutor=tutor, reviewer=reviewer, vocabulary=vocabulary, episodes_dir=episode_dir
     )
 
     return TutorCore(core_services=core_services)

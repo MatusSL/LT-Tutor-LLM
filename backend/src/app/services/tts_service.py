@@ -13,6 +13,7 @@ def text_to_speech(text: str) -> str:
     tts = text_to_speech_edge(text)
     return tts
 
+
 def _get_client() -> texttospeech.TextToSpeechClient:
     global _client
     if _client is None:
@@ -32,7 +33,6 @@ def text_to_speech_google(text: str) -> str:
         ),
     )
     return base64.b64encode(response.audio_content).decode("utf-8")
-
 
 
 # EDGE_VOICE = "es-ES-ElviraNeural"

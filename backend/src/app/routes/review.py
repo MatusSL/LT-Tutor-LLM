@@ -25,7 +25,9 @@ def get_review() -> ReviewDataResponse:
         mistakes = _tutor_core_instance.vocabulary.get_all_mistakes()
     except (HTTPError, APIError):
         raise HTTPException(status_code=503, detail="Database not available")
-    
+
     random_mistakes = pick_random_n_mistakes(mistakes=mistakes, n=15)
-    review_data = _tutor_core_instance.reviewer.generate_review(mistakes=random_mistakes)
+    review_data = _tutor_core_instance.reviewer.generate_review(
+        mistakes=random_mistakes
+    )
     return ReviewDataResponse(review_data=review_data)

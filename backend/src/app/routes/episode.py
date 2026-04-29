@@ -31,26 +31,24 @@ def get_current_episode() -> CurrentEpisodeResponse:
     try:
         current_episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
         return CurrentEpisodeResponse(episode=current_episode)
-    
+
     except (HTTPError, APIError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 
 
 def load_episode_vocabulary_into_session(episode: int) -> None:
     unlocked_words = (
-        _tutor_core_instance
-        .session_manager
-        .get_unlocked_words_from_episodes(
+        _tutor_core_instance.session_manager.get_unlocked_words_from_episodes(
             start=1, end=episode
-    ))
+        )
+    )
     _tutor_core_instance.session_state.vocabulary = unlocked_words
 
     current_episode_words = (
-        _tutor_core_instance
-        .session_manager
-        .get_unlocked_words_from_episodes(
+        _tutor_core_instance.session_manager.get_unlocked_words_from_episodes(
             start=episode, end=episode
-    ))
+        )
+    )
     _tutor_core_instance.session_state.episode_vocabulary = current_episode_words
 
 
@@ -63,12 +61,12 @@ def build_saved_episode_response() -> SavedEpisodeResponse:
     try:
         episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
         if episode <= 0:
-            raise HTTPException(status_code=404, detail="No completed episode has been saved yet.")
+            raise HTTPException(
+                status_code=404, detail="No completed episode has been saved yet."
+            )
 
         episode_response = build_episode_response(episode)
         return SavedEpisodeResponse(**episode_response.model_dump(mode="json"))
-    
+
     except (HTTPError, APIError):
         raise HTTPException(status_code=503, detail="Database unavailable")
-
-

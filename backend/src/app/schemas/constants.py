@@ -15,4 +15,3 @@ class CoreServices:
     reviewer: ReviewerProtocol
     vocabulary: VocabularyProtocol
     episodes_dir: Path
-

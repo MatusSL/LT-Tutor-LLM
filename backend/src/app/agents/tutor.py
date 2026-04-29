@@ -16,18 +16,20 @@ class Tutor(TutorProtocol):
     def __init__(self, model: BaseChatModel) -> None:
         self.model = model.with_structured_output(TutorResponse)
 
-    def reply(self, user_input: str, context: List[Context], vocabulary: Set[str]) -> Tuple[str, TutorResponse]:
+    def reply(
+        self, user_input: str, context: List[Context], vocabulary: Set[str]
+    ) -> Tuple[str, TutorResponse]:
         conversation = "\n".join(f"{m.role}: {m.content}" for m in context)
 
-        prompt = MERGED_TUTOR_PROMPT.format(
-            history=conversation, user_input=user_input
-        )
+        prompt = MERGED_TUTOR_PROMPT.format(history=conversation, user_input=user_input)
 
         try:
             tutor_response: TutorResponse = self.model.invoke(prompt)
             return tutor_response.response_spanish, tutor_response
         except Exception as e:
-            logger.error("Failed to get structured response from tutor model", exc_info=e)
+            logger.error(
+                "Failed to get structured response from tutor model", exc_info=e
+            )
             return self._fallback(user_input)
 
     def _fallback(self, user_input: str) -> Tuple[str, TutorResponse]:

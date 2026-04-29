@@ -16,7 +16,9 @@ router = APIRouter()
 @router.post("/chat", response_model=ChatResponse)
 def chat_endpoint(user_input: UserInput):
     try:
-        result = _tutor_core_instance.handle_message(user_input=user_input.user_sentence)
+        result = _tutor_core_instance.handle_message(
+            user_input=user_input.user_sentence
+        )
     except (HTTPError, APIError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 

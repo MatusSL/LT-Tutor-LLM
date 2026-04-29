@@ -19,6 +19,7 @@ class Table(str, Enum):
     USERS = "users"
     WORDS = "words"
     MISTAKES = "mistakes"
+
     def __str__(self) -> str:
         return self.value
 
@@ -29,23 +30,27 @@ class User(str, Enum):
     MAX_EPISODE = "max_episode"
     LANGUAGE = "language"
     CREATED_AT = "created_at"
+
     def __str__(self) -> str:
         return self.value
 
 
 class Word(str, Enum):
     ID = "id"
+    USER_ID = "user_id"
     WORD = "word"
     TRANSLATION = "translation"
     IS_HIGH_FREQUENCY = "is_high_frequency"
     CREATED_AT = "created_at"
     UPDATED_AT = "updated_at"
+
     def __str__(self) -> str:
         return self.value
 
 
 class Mistake(str, Enum):
     ID = "id"
+    USER_ID = "user_id"
     ORIGIN = "origin"
     CORRECTED = "corrected"
     SENTENCE = "sentence"
@@ -53,27 +58,35 @@ class Mistake(str, Enum):
     CREATED_AT = "created_at"
     UPDATED_AT = "updated_at"
     DISTRACTIONS = "distractions"
+
     def __str__(self) -> str:
         return self.value
 
 
 class WordModel(BaseModel):
     word: str
+    user_id: str
     translation: str | None = Field(default=None)
     is_high_frequency: bool = Field(default=False)
-    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
+
 
 type DistractionType = Literal["flashcards", "quiz", "phrase", "blank"]
+
 
 class UserModel(BaseModel):
     display_name: str
     max_episode: int = Field(default=1, ge=0)
     language: Language
 
+
 class PhraseQuiz(BaseModel):
     phrase: str
     correct_answer: str
     options: List[str]
+
 
 class FillBlank(BaseModel):
     sentence: str
@@ -82,9 +95,11 @@ class FillBlank(BaseModel):
     options: List[str]
     translation: str
 
+
 class Flashcard(BaseModel):
     origin: str
     translation: str
+
 
 class ErrorCorrection(BaseModel):
     sentence: str
@@ -93,21 +108,27 @@ class ErrorCorrection(BaseModel):
     error_type: str
     explanation: str
 
+
 class ReviewData(BaseModel):
     flashcards: List[Flashcard]
     phrase_quiz: List[PhraseQuiz]
     blank_words: List[FillBlank]
     error_corrections: List[ErrorCorrection]
 
+
 class DistractionModel(BaseModel):
     phrase_quiz: PhraseQuiz
     fill_blank: FillBlank
     correction: ErrorCorrection
 
+
 class MistakeModel(BaseModel):
+    # user_id: str
     origin: str
     corrected: str
     sentence: str
     translation: str
-    updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    updated_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
     distractions: DistractionModel

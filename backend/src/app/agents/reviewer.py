@@ -10,7 +10,7 @@ from app.schemas.db import (
     ErrorCorrection,
     Flashcard,
     PhraseQuiz,
-    ReviewData
+    ReviewData,
 )
 from app.schemas.protocols import ReviewerProtocol
 
@@ -68,8 +68,12 @@ class Reviewer(ReviewerProtocol):
         try:
             return self.model.invoke(prompt)
         except Exception as e:
-            logger.error("Failed to generate distractions for word '%s'", word, exc_info=e)
-            raise RuntimeError(f"Failed to generate distractions for word '{word}'") from e
+            logger.error(
+                "Failed to generate distractions for word '%s'", word, exc_info=e
+            )
+            raise RuntimeError(
+                f"Failed to generate distractions for word '{word}'"
+            ) from e
 
     def generate_review(self, mistakes: List[MistakeModel]) -> ReviewData:
         flashcards = self.generate_flashcards(mistakes=mistakes)
@@ -81,7 +85,7 @@ class Reviewer(ReviewerProtocol):
             flashcards=flashcards,
             phrase_quiz=phrase_quiz,
             error_corrections=error_correction,
-            blank_words=fill_in_the_blank
+            blank_words=fill_in_the_blank,
         )
 
     def generate_flashcards(self, mistakes: List[MistakeModel]) -> List[Flashcard]:
@@ -90,8 +94,12 @@ class Reviewer(ReviewerProtocol):
     def generate_phrase_quiz(self, mistakes: List[MistakeModel]) -> List[PhraseQuiz]:
         return [m.distractions.phrase_quiz for m in mistakes]
 
-    def generate_fill_in_the_blank(self, mistakes: List[MistakeModel]) -> List[FillBlank]:
+    def generate_fill_in_the_blank(
+        self, mistakes: List[MistakeModel]
+    ) -> List[FillBlank]:
         return [m.distractions.fill_blank for m in mistakes]
 
-    def generate_error_correction(self, mistakes: List[MistakeModel]) -> List[ErrorCorrection]:
+    def generate_error_correction(
+        self, mistakes: List[MistakeModel]
+    ) -> List[ErrorCorrection]:
         return [m.distractions.correction for m in mistakes]

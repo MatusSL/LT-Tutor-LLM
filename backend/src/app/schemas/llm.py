@@ -1,10 +1,6 @@
 from typing import Literal, Optional
 from pydantic import BaseModel, Field, model_validator
-from app.utils.helpers import (
-    _find_closest,
-    _expand_to_word_boundaries,
-    _is_word_char
-)
+from app.utils.helpers import _find_closest, _expand_to_word_boundaries, _is_word_char
 
 from app.schemas.db import Language
 
@@ -27,8 +23,6 @@ class ErrorCandidate(BaseModel):
     error_type: str
     correction: str
     explanation: str
-
-
 
 
 class Correction(BaseModel):
@@ -77,9 +71,8 @@ class Correction(BaseModel):
                     wrong_text = expanded_text
 
             cuts_through_word = (
-                (start > 0 and _is_word_char(self.original[start - 1]))
-                or (end < original_length and _is_word_char(self.original[end]))
-            )
+                start > 0 and _is_word_char(self.original[start - 1])
+            ) or (end < original_length and _is_word_char(self.original[end]))
             if cuts_through_word:
                 start, end = _expand_to_word_boundaries(self.original, start, end)
                 wrong_text = self.original[start:end]
@@ -100,8 +93,12 @@ class TutorResponse(BaseModel):
     input_spanish: str = Field(description="User's input in Spanish.")
     input_english: str = Field(description="User's input in English.")
     input_language: Language = Field(description="Detected input language")
-    response_spanish: str = Field(description="The main conversational response in Spanish.")
-    response_english: str = Field(description="The main conversational response in English.")
+    response_spanish: str = Field(
+        description="The main conversational response in Spanish."
+    )
+    response_english: str = Field(
+        description="The main conversational response in English."
+    )
     correction: Optional[Correction] = Field(
         default=None, description="Present only if the user made a mistake."
     )

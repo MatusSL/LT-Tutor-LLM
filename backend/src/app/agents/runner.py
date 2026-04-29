@@ -39,7 +39,7 @@ class Runner(RunnerProtocol):
                 return " ".join(str(c) for c in content)
 
             return content
-        
+
         except (KeyError, IndexError) as e:
             logger.error("Failed to generate valid response.", exc_info=e)
             raise LangChainException("Failed to extract content from response")
