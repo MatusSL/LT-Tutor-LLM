@@ -1,0 +1,24 @@
+Day 4 — Thread user_id Through the Backend                                                                                                                        
+                                                                                                                                                                    
+  The ripple effect:
+                                                                                                                                                                    
+  Once get_current_user works, every route handler can access the user. But the services downstream don't know about it yet.                                        
+   
+  Currently vocabulary.py:61 does .eq(User.DISPLAY_NAME, "matus"). That needs to become .eq("user_id", user.id) — and the user_id has to flow from the route →      
+  through TutorCore → into Vocabulary.                                                                                                                            
+                                                                                                                                                                    
+  What changes:                                                                                                                                                   
+
+  1. SessionState gets a user_id field                                                                                                                              
+  2. Vocabulary methods accept user_id as a parameter (or receive it at construction)
+  3. TutorCore.handle_message() receives the user and passes it down                                                                                                
+  4. All .eq(User.DISPLAY_NAME, "matus") calls become .eq("user_id", user_id)                                                                                       
+  5. Same for words and mistakes queries — always filter by user_id                                                                                                 
+                                                                                                                                                                    
+  Task for Day 4:                                                                                                                                                   
+                                                                                                                                                                    
+  1. Thread user_id through the call chain                                                                                                                          
+  2. Remove every hardcoded "matus" reference
+  3. Test: sign up two users, have each accumulate vocabulary, verify they see only their own                                                                       
+                                                                                                                                                                    
+  ---

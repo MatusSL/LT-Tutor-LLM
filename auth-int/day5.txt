@@ -1,0 +1,23 @@
+Day 5 — Frontend Auth Screens                                                                                                                                     
+                                                                                                                                                                  
+  What you'll build:
+
+  - app/(auth)/login.tsx — email + password form, calls /auth/login, stores JWT                                                                                     
+  - app/(auth)/signup.tsx — same but calls /auth/signup
+  - Root layout redirects to (auth) if no JWT is stored, (tabs) if JWT exists                                                                                       
+                                                                                                                                                                    
+  Key concepts:                                                                                                                                                     
+                                                                                                                                                                    
+  - expo-secure-store: On mobile, JWTs should not go in AsyncStorage (unencrypted). SecureStore uses the device's keychain.                                         
+  - Update tutor-api.ts:114 — replace the X-API-Key header with Authorization: Bearer <token>
+  - Handle token expiry: if the server returns 401, clear the stored token and redirect to login                                                                    
+                                                                                                                                                                    
+  Task for Day 5:                                                                                                                                                   
+                                                                                                                                                                    
+  1. Install expo-secure-store                                                                                                                                    
+  2. Build login/signup screens (simple forms — don't over-design)
+  3. Modify requestJson in tutor-api.ts to read the JWT from SecureStore and attach it as a Bearer token                                                            
+  4. Add a logout button that clears the token and redirects to login                                                                                               
+  5. Test the full flow: signup → lands on chat → force-quit → reopen → still logged in → logout → back to login                                                    
+                                                                                                                                                                    
+  ---                                                                                                                                                               
