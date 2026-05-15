@@ -253,6 +253,20 @@ export default function ChatScreen() {
     }
   };
 
+  const restartChat = async () => {
+    if (activeEpisode === null || setupLoading) return;
+    stopAudio();
+    setSetupError(null);
+    setSetupLoading(true);
+    try {
+      const payload = await requestEpisodeTopics(activeEpisode);
+      applyEpisodeTopics(payload);
+    } catch (error) {
+      setSetupLoading(false);
+      setSetupError(error instanceof Error ? error.message : "Could not restart chat.");
+    }
+  };
+
   const initializeChatFromSelection = async () => {
     if (selectedEpisode === 0) return;
     setSetupError(null);
@@ -373,6 +387,17 @@ export default function ChatScreen() {
           <Text style={styles.headerName}>LT Tutor</Text>
           <Text style={styles.headerStatus}>Active now</Text>
         </View>
+        {setupStep === "chat" && (
+          <TouchableOpacity
+            style={styles.newChatBtn}
+            onPress={() => void restartChat()}
+            disabled={setupLoading || activeEpisode === null}
+            activeOpacity={0.7}
+            accessibilityLabel="Start new chat"
+          >
+            <Ionicons name="refresh" size={20} color={C.text.secondary} />
+          </TouchableOpacity>
+        )}
       </View>
       <View style={styles.divider} />
 
@@ -582,6 +607,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: C.text.secondary,
     marginTop: 2,
+  },
+  newChatBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: C.surfaceAlt,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   divider: {
     height: StyleSheet.hairlineWidth,
