@@ -1,0 +1,1 @@
+LEARNER_LEVEL = "lower B1, with occasional B2 stretch vocabulary (i+1: keep grammar and surrounding sentences at B1 so meaning is inferable, but sprinkle 1-2 slightly higher-tier words per turn to push acquisition)"
