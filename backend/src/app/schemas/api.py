@@ -18,10 +18,17 @@ class EpisodeRequest(BaseModel):
     episode: int
 
 
+class OpenerPayload(BaseModel):
+    response_spanish: str
+    response_english: str
+    response_audio: str | None = None
+
+
 class EpisodeResponse(BaseModel):
     status: str
     episode: int
     topics: Topics
+    opener: OpenerPayload | None = None
 
 
 class CurrentEpisodeResponse(BaseModel):
@@ -32,6 +39,7 @@ class SavedEpisodeResponse(BaseModel):
     status: str
     episode: int
     topics: Topics
+    opener: OpenerPayload | None = None
 
 
 class HealthResponse(BaseModel):

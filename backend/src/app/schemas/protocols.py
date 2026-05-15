@@ -1,6 +1,6 @@
 from typing import List, Protocol, Set, Tuple
 
-from app.schemas.llm import TutorResponse
+from app.schemas.llm import OpenerResponse, TutorResponse
 from app.schemas.db import DistractionModel, MistakeModel, ReviewData
 from app.schemas.types import Context
 
@@ -15,6 +15,10 @@ class TutorProtocol(Protocol):
     def reply(
         self, user_input: str, context: List[Context], vocabulary: Set[str]
     ) -> Tuple[str, TutorResponse]: ...
+
+
+class OpenerProtocol(Protocol):
+    def generate(self, vocabulary: Set[str]) -> OpenerResponse: ...
 
 
 class VocabularyProtocol(Protocol):

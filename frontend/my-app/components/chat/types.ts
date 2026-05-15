@@ -34,21 +34,25 @@ export type SetupStep = "options" | "selectEpisodes" | "chat";
 
 export const EPISODE_COUNT = 90;
 
-export const buildIntroMessage = (topicNames: string[]): Message => ({
+const FALLBACK_OPENER_SPANISH = "Hola, ¿qué tal? ¿De qué quieres hablar hoy?";
+const FALLBACK_OPENER_ENGLISH = "Hey, what's up? What do you want to talk about today?";
+
+type OpenerInput = {
+  response_spanish: string;
+  response_english: string;
+  response_audio: string | null;
+} | null;
+
+export const buildOpenerMessage = (opener: OpenerInput): Message => ({
   id: "0",
   type: "tutor",
+  audio: opener?.response_audio ?? null,
   tutor: {
     input_spanish: "",
     input_english: "",
     input_language: "english",
-    response_spanish:
-      topicNames.length > 0
-        ? `Temas sugeridos: ${topicNames.join(", ")}`
-        : "Hola, ¿qué tal? ¿De qué quieres hablar hoy?",
-    response_english:
-      topicNames.length > 0
-        ? `Suggested topics based on your vocabulary: ${topicNames.join(", ")}`
-        : "Hey, what's up? What do you want to talk about today?",
+    response_spanish: opener?.response_spanish || FALLBACK_OPENER_SPANISH,
+    response_english: opener?.response_english || FALLBACK_OPENER_ENGLISH,
     correction: null,
   },
 });

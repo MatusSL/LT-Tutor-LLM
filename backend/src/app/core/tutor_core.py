@@ -10,7 +10,7 @@ from app.core.session_manager import SessionManager
 from app.schemas.api import ChatResponse
 from app.schemas.constants import CoreServices
 from app.schemas.db import Language, MistakeModel
-from app.schemas.llm import Correction, TutorResponse
+from app.schemas.llm import Correction, OpenerResponse, TutorResponse
 from app.schemas.types import Context, UserInputAnalysis
 
 logger = logging.getLogger(__name__)
@@ -21,11 +21,20 @@ class TutorCore:
         self.tutor = core_services.tutor
         self.vocabulary = core_services.vocabulary
         self.reviewer = core_services.reviewer
+        self.opener = core_services.opener
         self.session_manager = SessionManager(core_services.episodes_dir)
 
         self.session_state = SessionState()
         self._vocab_lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=1)
+
+    def generate_opener(self) -> OpenerResponse:
+        self.session_state.context = []
+        opener = self.opener.generate(self.session_state.episode_vocabulary)
+        self.session_state.context.append(
+            Context(role="response", content=opener.response_spanish)
+        )
+        return opener
 
     def handle_message(self, user_input: str) -> ChatResponse:
         # if len(self.session_state.vocabulary) == 0:

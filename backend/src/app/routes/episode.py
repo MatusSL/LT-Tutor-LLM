@@ -8,9 +8,11 @@ from app.schemas.api import (
     CurrentEpisodeResponse,
     EpisodeRequest,
     EpisodeResponse,
+    OpenerPayload,
     SavedEpisodeResponse,
 )
 from app.schemas.llm import Topics
+from app.services import tts_service
 
 router = APIRouter()
 
@@ -54,7 +56,23 @@ def load_episode_vocabulary_into_session(episode: int) -> None:
 
 def build_episode_response(episode: int) -> EpisodeResponse:
     load_episode_vocabulary_into_session(episode)
-    return EpisodeResponse(status="ok", episode=episode, topics=Topics(topics=[]))
+    opener = build_opener_payload()
+    return EpisodeResponse(
+        status="ok",
+        episode=episode,
+        topics=Topics(topics=[]),
+        opener=opener,
+    )
+
+
+def build_opener_payload() -> OpenerPayload:
+    opener = _tutor_core_instance.generate_opener()
+    audio = tts_service.text_to_speech(opener.response_spanish)
+    return OpenerPayload(
+        response_spanish=opener.response_spanish,
+        response_english=opener.response_english,
+        response_audio=audio,
+    )
 
 
 def build_saved_episode_response() -> SavedEpisodeResponse:

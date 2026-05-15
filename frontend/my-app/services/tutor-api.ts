@@ -11,16 +11,24 @@ type Topics = {
   topics: Topic[];
 };
 
+export type OpenerPayload = {
+  response_spanish: string;
+  response_english: string;
+  response_audio: string | null;
+};
+
 export type EpisodeTopicsResponse = {
   status: string;
   episode: number;
   topics: Topics;
+  opener: OpenerPayload | null;
 };
 
 export type SavedEpisodeTopicsResponse = {
   status: string;
   episode: number;
   topics: Topics;
+  opener: OpenerPayload | null;
 };
 
 type ErrorPayload = {

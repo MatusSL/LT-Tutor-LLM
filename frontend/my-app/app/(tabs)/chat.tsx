@@ -31,9 +31,10 @@ import {
   sendChatMessage,
   transcribeAudio,
   requestCurrentEpisode,
+  type OpenerPayload,
 } from "@/services/tutor-api";
 import { C } from "@/constants/colors";
-import { buildIntroMessage, type Message, type SetupStep, type Topic } from "@/components/chat/types";
+import { buildOpenerMessage, type Message, type SetupStep } from "@/components/chat/types";
 import { RecordingIndicator } from "@/components/chat/RecordingIndicator";
 import { UserBubble } from "@/components/chat/UserBubble";
 import { TutorBubble } from "@/components/chat/TutorBubble";
@@ -227,14 +228,17 @@ export default function ChatScreen() {
     else void startRecording();
   };
 
-  const applyEpisodeTopics = (payload: { episode: number; topics?: { topics?: Topic[] } }) => {
-    const topicNames = (payload.topics?.topics ?? []).map((t) => t.display_name);
+  const applyEpisodeTopics = (payload: { episode: number; opener?: OpenerPayload | null }) => {
+    const opener = payload.opener ?? null;
     setActiveEpisode(payload.episode);
     setSelectedEpisode(payload.episode);
-    setMessages([buildIntroMessage(topicNames)]);
+    setMessages([buildOpenerMessage(opener)]);
     setSetupLoading(false);
     setSetupError(null);
     setSetupStep("chat");
+    if (opener?.response_audio) {
+      void playResponseAudio(opener.response_audio, "0");
+    }
   };
 
   const initializeChatFromSavedEpisode = async () => {

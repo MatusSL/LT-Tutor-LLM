@@ -106,3 +106,12 @@ class TutorResponse(BaseModel):
 
 class HighFrequencyWords(BaseModel):
     high_frequency_words: list[str]
+
+
+class OpenerResponse(BaseModel):
+    response_spanish: str = Field(
+        description="One short Spanish question that opens the conversation."
+    )
+    response_english: str = Field(
+        description="English translation of response_spanish."
+    )
