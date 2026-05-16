@@ -8,7 +8,7 @@ A bilingual Spanish conversation tutor. Users practice Spanish with an LLM that 
 |-------|-----------|
 | Backend | Python 3.12, FastAPI, Uvicorn |
 | LLM | Ollama (Qwen 2.5, Llama 3.2) via LangChain |
-| Database | Firebase Firestore |
+| Database | Supabase (Postgres) |
 | Frontend | React Native 0.81, Expo 54, TypeScript 5.9 |
 | Navigation | Expo Router (file-based) |
 | BE Package Manager | `uv` + `pyproject.toml` |
@@ -22,7 +22,7 @@ backend/
 ├── src/app/
 │   ├── agents/                # LangChain agent wrappers (one per task)
 │   ├── core/                  # Orchestrator + session state
-│   ├── database/              # Firestore singleton client
+│   ├── database/              # Supabase singleton client
 │   ├── prompts/               # LLM system prompt strings
 │   ├── schemas/               # Pydantic models (shared types)
 │   └── services/              # Vocabulary DB operations
@@ -79,6 +79,6 @@ Frontend types mirror them: `frontend/my-app/services/tutor-api.ts:31`
 
 ## Additional Documentation
 
-- [.claude/docs/architectural_patterns.md](.claude/docs/architectural_patterns.md) — Agent factory, DI, orchestrator flow, Firestore patterns, frontend state
+- [.claude/docs/architectural_patterns.md](.claude/docs/architectural_patterns.md) — Agent factory, DI, orchestrator flow, Supabase patterns, frontend state
 - [backend/CLAUDE.md](backend/CLAUDE.md) — Backend-specific commands and architecture detail
 - [backend/.claude/docs/architectural_patterns.md](backend/.claude/docs/architectural_patterns.md) — Backend-specific patterns (prompt engineering, retry logic)

@@ -225,7 +225,6 @@ export default function FillBlankScreen() {
           </View>
         ) : (
           <>
-            {/* Sentence card */}
             <View style={styles.sentenceCard}>
               <Text style={styles.sentenceLabel}>Complete the sentence</Text>
               <Text style={styles.sentenceText}>{displaySentence}</Text>
@@ -234,7 +233,6 @@ export default function FillBlankScreen() {
               )}
             </View>
 
-            {/* Word options */}
             <View style={styles.wordsGrid}>
               {question.options.map((word) => (
                 <TouchableOpacity

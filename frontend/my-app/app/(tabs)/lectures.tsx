@@ -110,7 +110,6 @@ export default function LecturesScreen() {
         </View>
       ) : (
         <>
-          {/* Progress card */}
           <View style={styles.progressCard}>
             <View style={styles.progressHeader}>
               <Text style={styles.progressLabel}>Progress</Text>
@@ -133,7 +132,6 @@ export default function LecturesScreen() {
             showsVerticalScrollIndicator={false}
           />
 
-          {/* Start Session button */}
           <View style={styles.footer}>
             <TouchableOpacity
               style={[

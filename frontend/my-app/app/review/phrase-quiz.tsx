@@ -211,7 +211,6 @@ export default function PhraseQuizScreen() {
       <View style={styles.divider} />
 
       <View style={styles.body}>
-        {/* Progress */}
         <View style={styles.progressBar}>
           <View
             style={[
@@ -250,13 +249,11 @@ export default function PhraseQuizScreen() {
           </View>
         ) : (
           <>
-            {/* Question */}
             <View style={styles.questionCard}>
               <Text style={styles.questionLabel}>Translate this phrase</Text>
               <Text style={styles.questionPhrase}>{question.phrase}</Text>
             </View>
 
-            {/* Options */}
             <View style={styles.optionsContainer}>
               {question.options.map((option, index) => (
                 <TouchableOpacity
@@ -271,7 +268,6 @@ export default function PhraseQuizScreen() {
               ))}
             </View>
 
-            {/* Next button */}
             {selected !== null && (
               <TouchableOpacity
                 style={styles.nextBtn}

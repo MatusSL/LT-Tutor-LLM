@@ -152,7 +152,6 @@ export default function ErrorCorrectionScreen() {
           </View>
         ) : (
           <>
-            {/* Instruction */}
             <View style={styles.instructionCard}>
               <Text style={styles.instructionLabel}>Find the error</Text>
               <Text style={styles.instructionText}>
@@ -160,7 +159,6 @@ export default function ErrorCorrectionScreen() {
               </Text>
             </View>
 
-            {/* Words */}
             <View style={styles.wordsRow}>
               {question.sentence.split(" ").map((word, index) => (
                 <TouchableOpacity
@@ -182,7 +180,6 @@ export default function ErrorCorrectionScreen() {
               ))}
             </View>
 
-            {/* Explanation */}
             {tappedIndex !== null && (
               <View style={styles.explanationCard}>
                 <View style={styles.explanationHeader}>

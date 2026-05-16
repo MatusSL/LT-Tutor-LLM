@@ -42,7 +42,6 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.badge}>
@@ -58,7 +57,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Primary actions */}
         <View style={styles.panel}>
           <TouchableOpacity
             style={[styles.actionRow, styles.rowDivider]}
@@ -106,7 +104,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Recent mistakes */}
         <View style={[styles.panel, styles.mistakesPanel]}>
           <View style={styles.mistakesHeader}>
             <Text style={styles.mistakesLabel}>RECENT MISTAKES · {MISTAKES.length}</Text>
@@ -139,8 +136,6 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: 24,
   },
-
-  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -193,7 +188,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Panel card
   panel: {
     marginHorizontal: 14,
     backgroundColor: SH.panel,
@@ -207,7 +201,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
 
-  // Action rows
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -240,7 +233,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  // Mistakes panel
   mistakesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

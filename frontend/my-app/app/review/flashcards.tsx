@@ -81,7 +81,6 @@ export default function FlashcardsScreen() {
   };
 
   const handleAgain = () => {
-    // Move current card to the end of the deck
     setDeck((prev) => {
       const copy = [...prev];
       const card = copy.splice(currentIndex, 1)[0];
@@ -111,7 +110,6 @@ export default function FlashcardsScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color={C.text.primary} />
@@ -122,7 +120,6 @@ export default function FlashcardsScreen() {
       <View style={styles.divider} />
 
       <View style={styles.body}>
-        {/* Direction toggle */}
         <View style={styles.toggleRow}>
           <TouchableOpacity
             style={[styles.toggleBtn, startSpanish && styles.toggleBtnActive]}
@@ -154,7 +151,6 @@ export default function FlashcardsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Progress */}
         <Text style={styles.progress}>
           {finished ? `${total} / ${total}` : `${gotCount} / ${total}`}
         </Text>
@@ -165,7 +161,6 @@ export default function FlashcardsScreen() {
         </View>
 
         {finished ? (
-          /* Finished state */
           <View style={styles.finishedContainer}>
             <View style={styles.finishedIcon}>
               <Ionicons name="checkmark-circle" size={48} color={C.green}/>
@@ -184,7 +179,6 @@ export default function FlashcardsScreen() {
           </View>
         ) : (
           <>
-            {/* Flashcard */}
             <Pressable
               style={styles.card}
               onPress={!flipped ? handleFlip : undefined}
@@ -200,7 +194,6 @@ export default function FlashcardsScreen() {
               )}
             </Pressable>
 
-            {/* Action buttons */}
             {flipped && (
               <View style={styles.actionRow}>
                 <TouchableOpacity
