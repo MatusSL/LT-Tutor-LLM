@@ -20,11 +20,13 @@ load_dotenv()
 raw_api_key = os.getenv("OPENAI_API_KEY")
 API_KEY = SecretStr(raw_api_key) if raw_api_key else None
 
-TUTOR_MODEL_NAME = "gpt-5.4-mini"
-REVIEWER_MODEL_NAME = "gpt-5.4-nano"
+MODELS = {
+      "conversation": {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
+      "lt":           {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
+}
 
-TUTOR_MODEL = ChatOpenAI(model=TUTOR_MODEL_NAME, api_key=API_KEY)
-REVIEWER_MODEL = ChatOpenAI(model=REVIEWER_MODEL_NAME, api_key=API_KEY)
+TUTOR_MODEL = ChatOpenAI(model=MODELS["conversation"]["tutor"], api_key=API_KEY)
+REVIEWER_MODEL = ChatOpenAI(model=MODELS["conversation"]["reviewer"], api_key=API_KEY)
 
 
 def resolve_episode_dir() -> Path:
