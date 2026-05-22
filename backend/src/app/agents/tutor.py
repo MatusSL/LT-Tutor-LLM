@@ -53,16 +53,8 @@ class Tutor(TutorProtocol):
                 history=conversation, user_input=user_input
             )
 
-        if user_ctx_data.scope:
-            unlocked_tenses = (
-                ", ".join(sorted(user_ctx_data.scope.tenses)) or "(none yet)",
-            )
-            unlocked_structures = (
-                ", ".join(sorted(user_ctx_data.scope.structures)) or "(none yet)"
-            )
-        else:
-            unlocked_tenses = "(none yet)"
-            unlocked_structures = "(none yet)"
+        unlocked_tenses = ", ".join(sorted(user_ctx_data.scope.tenses)) or "(none yet)"
+        unlocked_structures = ", ".join(sorted(user_ctx_data.scope.structures)) or "(none yet)"
 
         return LT_TUTOR_PROMPT.format(
             LEARNER_LEVEL=LEARNER_LEVEL,
