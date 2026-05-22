@@ -31,6 +31,7 @@ import {
   sendChatMessage,
   transcribeAudio,
   type OpenerPayload,
+  type TutorMode,
 } from "@/services/tutor-api";
 import { C } from "@/constants/colors";
 import { buildOpenerMessage, type Message, type SetupStep } from "@/components/chat/types";
@@ -61,6 +62,7 @@ export default function ChatScreen() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [language, setLanguage] = useState<"es"|"en">("es")
+  const [mode, setMode] = useState<TutorMode>("conversation")
 
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
@@ -291,7 +293,7 @@ export default function ChatScreen() {
     scrollToBottom();
 
     try {
-      const payload = await sendChatMessage(text);
+      const payload = await sendChatMessage(text, mode);
       const tutorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "tutor",
@@ -388,15 +390,39 @@ export default function ChatScreen() {
           <Text style={styles.headerStatus}>Active now</Text>
         </View>
         {setupStep === "chat" && (
-          <TouchableOpacity
-            style={styles.newChatBtn}
-            onPress={() => void restartChat()}
-            disabled={setupLoading || activeEpisode === null}
-            activeOpacity={0.7}
-            accessibilityLabel="Start new chat"
-          >
-            <Ionicons name="refresh" size={20} color={C.text.secondary} />
-          </TouchableOpacity>
+          <>
+            <View style={styles.modeToggle}>
+              <TouchableOpacity
+                style={[styles.modeOption, mode === "conversation" && styles.modeOptionActive]}
+                onPress={() => setMode("conversation")}
+                activeOpacity={0.7}
+                accessibilityLabel="Conversation mode"
+              >
+                <Text style={[styles.modeOptionText, mode === "conversation" && styles.modeOptionTextActive]}>
+                  Chat
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modeOption, mode === "lt" && styles.modeOptionActive]}
+                onPress={() => setMode("lt")}
+                activeOpacity={0.7}
+                accessibilityLabel="Discovery mode"
+              >
+                <Text style={[styles.modeOptionText, mode === "lt" && styles.modeOptionTextActive]}>
+                  Discovery
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.newChatBtn}
+              onPress={() => void restartChat()}
+              disabled={setupLoading || activeEpisode === null}
+              activeOpacity={0.7}
+              accessibilityLabel="Start new chat"
+            >
+              <Ionicons name="refresh" size={20} color={C.text.secondary} />
+            </TouchableOpacity>
+          </>
         )}
       </View>
       <View style={styles.divider} />
@@ -617,6 +643,30 @@ const styles = StyleSheet.create({
     borderColor: C.border,
     alignItems: "center",
     justifyContent: "center",
+  },
+  modeToggle: {
+    flexDirection: "row",
+    backgroundColor: C.surfaceAlt,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+    padding: 2,
+  },
+  modeOption: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  modeOptionActive: {
+    backgroundColor: C.accent,
+  },
+  modeOptionText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.text.secondary,
+  },
+  modeOptionTextActive: {
+    color: "#FFFFFF",
   },
   divider: {
     height: StyleSheet.hairlineWidth,

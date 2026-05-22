@@ -152,10 +152,12 @@ export const requestSavedEpisode = () =>
     method: "GET",
   });
 
-export const sendChatMessage = (userSentence: string) =>
+export type TutorMode = "conversation" | "lt";
+
+export const sendChatMessage = (userSentence: string, mode: TutorMode) =>
   requestJson<TutorApiChatResponse>("/chat", {
     method: "POST",
-    body: JSON.stringify({ user_sentence: userSentence }),
+    body: JSON.stringify({ user_sentence: userSentence, mode }),
   });
 
 export const transcribeAudio = async (audioUri: string, language: string): Promise<string> => {
