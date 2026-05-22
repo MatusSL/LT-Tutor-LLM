@@ -1,10 +1,15 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
-from app.schemas.llm import TutorResponse, Topics
+from app.schemas.llm import TutorResponse
 from app.schemas.db import ReviewData
 
+type Mode = Literal["conversation", "lt"]
 
-class UserInput(BaseModel):
+
+class ChatRequest(BaseModel):
+    mode: Mode
     user_sentence: str
 
 
@@ -25,21 +30,12 @@ class OpenerPayload(BaseModel):
 
 
 class EpisodeResponse(BaseModel):
-    status: str
     episode: int
-    topics: Topics
     opener: OpenerPayload | None = None
 
 
 class CurrentEpisodeResponse(BaseModel):
     episode: int
-
-
-class SavedEpisodeResponse(BaseModel):
-    status: str
-    episode: int
-    topics: Topics
-    opener: OpenerPayload | None = None
 
 
 class HealthResponse(BaseModel):

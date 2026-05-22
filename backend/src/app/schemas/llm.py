@@ -1,19 +1,8 @@
-from typing import Literal, Optional
+from typing import Optional
 from pydantic import BaseModel, Field, model_validator
 from app.utils.helpers import _find_closest, _expand_to_word_boundaries, _is_word_char
 
 from app.schemas.db import Language
-
-
-class Topic(BaseModel):
-    display_name: str
-    description: str
-    suggested_goals: list[str]
-    difficulty: Literal["easy", "medium", "hard"]
-
-
-class Topics(BaseModel):
-    topics: list[Topic]
 
 
 class ErrorCandidate(BaseModel):

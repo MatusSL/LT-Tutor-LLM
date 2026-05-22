@@ -4,63 +4,30 @@ from postgrest.exceptions import APIError
 from httpx import HTTPError
 
 from app.core.build_tutor_core import _tutor_core_instance
-from app.schemas.api import (
-    CurrentEpisodeResponse,
-    EpisodeRequest,
-    EpisodeResponse,
-    OpenerPayload,
-    SavedEpisodeResponse,
-)
-from app.schemas.llm import Topics
+from app.schemas.api import EpisodeRequest, EpisodeResponse, OpenerPayload
 from app.services import tts_service
 
 router = APIRouter()
 
 
-@router.post("/episode", response_model=EpisodeResponse)
+@router.post("/episode/selected", response_model=EpisodeResponse)
 def set_episode(request: EpisodeRequest) -> EpisodeResponse:
-    _tutor_core_instance.vocabulary.update_max_episode_completed(request.episode)
-    return build_episode_response(request.episode)
+    episode = request.episode
+    _tutor_core_instance.vocabulary.update_max_episode_completed(episode)
+    _tutor_core_instance.session_state.max_episode_completed = episode
+    load_tutor_scope_for_episode(episode)
+    return build_episode_response(episode)
 
 
-@router.get("/episode/saved", response_model=SavedEpisodeResponse)
-def load_saved_episode() -> SavedEpisodeResponse:
+@router.get("/episode/saved", response_model=EpisodeResponse)
+def load_saved_episode() -> EpisodeResponse:
     return build_saved_episode_response()
 
 
-@router.get("/episode/current", response_model=CurrentEpisodeResponse)
-def get_current_episode() -> CurrentEpisodeResponse:
-    try:
-        current_episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
-        return CurrentEpisodeResponse(episode=current_episode)
-
-    except (HTTPError, APIError):
-        raise HTTPException(status_code=503, detail="Database unavailable")
-
-
-def load_episode_vocabulary_into_session(episode: int) -> None:
-    unlocked_words = (
-        _tutor_core_instance.session_manager.get_unlocked_words_from_episodes(
-            start=1, end=episode
-        )
-    )
-    _tutor_core_instance.session_state.vocabulary = unlocked_words
-
-    current_episode_words = (
-        _tutor_core_instance.session_manager.get_unlocked_words_from_episodes(
-            start=episode, end=episode
-        )
-    )
-    _tutor_core_instance.session_state.episode_vocabulary = current_episode_words
-
-
 def build_episode_response(episode: int) -> EpisodeResponse:
-    load_episode_vocabulary_into_session(episode)
     opener = build_opener_payload()
     return EpisodeResponse(
-        status="ok",
         episode=episode,
-        topics=Topics(topics=[]),
         opener=opener,
     )
 
@@ -75,16 +42,24 @@ def build_opener_payload() -> OpenerPayload:
     )
 
 
-def build_saved_episode_response() -> SavedEpisodeResponse:
+def build_saved_episode_response() -> EpisodeResponse:
     try:
         episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
+        _tutor_core_instance.session_state.max_episode_completed = episode
+        load_tutor_scope_for_episode(episode)
+
         if episode <= 0:
             raise HTTPException(
                 status_code=404, detail="No completed episode has been saved yet."
             )
 
         episode_response = build_episode_response(episode)
-        return SavedEpisodeResponse(**episode_response.model_dump(mode="json"))
+        return EpisodeResponse(**episode_response.model_dump(mode="json"))
 
     except (HTTPError, APIError):
         raise HTTPException(status_code=503, detail="Database unavailable")
+
+
+def load_tutor_scope_for_episode(episode: int):
+    scope = _tutor_core_instance.session_manager.get_unlocked_scope(episode)
+    _tutor_core_instance.session_state.scope = scope

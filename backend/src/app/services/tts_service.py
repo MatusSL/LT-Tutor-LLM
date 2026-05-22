@@ -1,12 +1,6 @@
-import asyncio
 import base64
-import io
-
-from google.cloud import texttospeech
 from openai import OpenAI
-import edge_tts
 
-_client = None
 _openai_client: OpenAI | None = None
 
 OPENAI_TTS_MODEL = "tts-1"
@@ -15,13 +9,6 @@ OPENAI_TTS_VOICE = "nova"
 
 def text_to_speech(text: str) -> str:
     return text_to_speech_openai(text)
-
-
-def _get_client() -> texttospeech.TextToSpeechClient:
-    global _client
-    if _client is None:
-        _client = texttospeech.TextToSpeechClient()
-    return _client
 
 
 def _get_openai_client() -> OpenAI:
@@ -39,34 +26,3 @@ def text_to_speech_openai(text: str) -> str:
         response_format="mp3",
     )
     return base64.b64encode(response.content).decode("utf-8")
-
-
-def text_to_speech_google(text: str) -> str:
-    response = _get_client().synthesize_speech(
-        input=texttospeech.SynthesisInput(text=text),
-        voice=texttospeech.VoiceSelectionParams(
-            language_code="es-ES",
-            name="es-ES-Neural2-F",
-        ),
-        audio_config=texttospeech.AudioConfig(
-            audio_encoding=texttospeech.AudioEncoding.MP3,
-        ),
-    )
-    return base64.b64encode(response.audio_content).decode("utf-8")
-
-
-# EDGE_VOICE = "es-ES-ElviraNeural"
-EDGE_VOICE = "es-ES-AlvaroNeural"
-
-
-async def _synthesize_edge(text: str) -> bytes:
-    audio = io.BytesIO()
-    async for chunk in edge_tts.Communicate(text, EDGE_VOICE).stream():
-        if chunk["type"] == "audio" and (data := chunk.get("data")):
-            audio.write(data)
-    return audio.getvalue()
-
-
-def text_to_speech_edge(text: str) -> str:
-    audio_bytes = asyncio.run(_synthesize_edge(text))
-    return base64.b64encode(audio_bytes).decode("utf-8")

@@ -1,5 +1,3 @@
-import uvicorn
-
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
@@ -15,11 +13,19 @@ from app.routes import chat, episode, health, review
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
 logging.basicConfig(
     level=getattr(logging, log_level),
-    format="%(asctime)s %(levelname)s %(name)s - %(message)s"
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
 )
 
 
-for _noisy in ("httpcore", "httpx", "hpack", "openai", "python_multipart", "asyncio", "faster_whisper"):
+for _noisy in (
+    "httpcore",
+    "httpx",
+    "hpack",
+    "openai",
+    "python_multipart",
+    "asyncio",
+    "faster_whisper",
+):
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
@@ -35,14 +41,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.error("Unhandled exception", exc_info=exc)
     return JSONResponse(
-        status_code=500,
-        content={"detail": "An unexpected error occurred."}
+        status_code=500, content={"detail": "An unexpected error occurred."}
     )
-    
+
 
 _auth = [Depends(verify_api_key)]
 

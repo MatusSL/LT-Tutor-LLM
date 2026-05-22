@@ -44,7 +44,7 @@ class TestGetUnlockedWords:
     def test_returns_words_from_single_episode(self, tmp_path):
         write_episode(tmp_path, 1, ["hola", "amigo"])
         sm = SessionManager(tmp_path)
-        words = sm.get_unlocked_words_from_episodes(1, 1)
+        words = sm.get_unlocked_words(1)
         assert words == {"hola", "amigo"}
 
     def test_aggregates_words_across_multiple_episodes(self, tmp_path):
@@ -52,38 +52,38 @@ class TestGetUnlockedWords:
         write_episode(tmp_path, 2, ["amigo"])
         write_episode(tmp_path, 3, ["gracias"])
         sm = SessionManager(tmp_path)
-        words = sm.get_unlocked_words_from_episodes(1, 3)
+        words = sm.get_unlocked_words(3)
         assert words == {"hola", "amigo", "gracias"}
 
     def test_deduplicates_words_across_episodes(self, tmp_path):
         write_episode(tmp_path, 1, ["hola", "yo"])
         write_episode(tmp_path, 2, ["yo", "tu"])
         sm = SessionManager(tmp_path)
-        words = sm.get_unlocked_words_from_episodes(1, 2)
+        words = sm.get_unlocked_words(2)
         assert words == {"hola", "yo", "tu"}
 
     def test_skips_missing_episode_files_gracefully(self, tmp_path):
         write_episode(tmp_path, 1, ["hola"])
         write_episode(tmp_path, 3, ["gracias"])
         sm = SessionManager(tmp_path)
-        words = sm.get_unlocked_words_from_episodes(1, 3)
+        words = sm.get_unlocked_words(3)
         assert "hola" in words
         assert "gracias" in words
 
     def test_start_zero_treated_as_start_one(self, tmp_path):
         write_episode(tmp_path, 1, ["primero"])
         sm = SessionManager(tmp_path)
-        words = sm.get_unlocked_words_from_episodes(0, 1)
+        words = sm.get_unlocked_words(1)
         assert "primero" in words
 
     def test_returns_empty_set_when_no_episodes_found(self, tmp_path):
         sm = SessionManager(tmp_path)
-        words = sm.get_unlocked_words_from_episodes(1, 5)
+        words = sm.get_unlocked_words(5)
         assert words == set()
 
     def test_episode_with_no_unlocked_words_contributes_nothing(self, tmp_path):
         write_episode(tmp_path, 1, [])
         write_episode(tmp_path, 2, ["hola"])
         sm = SessionManager(tmp_path)
-        words = sm.get_unlocked_words_from_episodes(1, 2)
+        words = sm.get_unlocked_words(2)
         assert words == {"hola"}

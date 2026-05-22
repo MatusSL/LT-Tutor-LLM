@@ -7,8 +7,8 @@ from app.agents.reviewer import Reviewer
 from app.agents.tutor import Tutor
 
 from app.core.tutor_core import TutorCore
-
 from app.schemas.constants import CoreServices
+from app.schemas.api import Mode
 from app.services.vocabulary import Vocabulary
 
 import os
@@ -21,12 +21,14 @@ raw_api_key = os.getenv("OPENAI_API_KEY")
 API_KEY = SecretStr(raw_api_key) if raw_api_key else None
 
 MODELS = {
-      "conversation": {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
-      "lt":           {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
+    "lt": {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
+    "conversation": {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
 }
 
-TUTOR_MODEL = ChatOpenAI(model=MODELS["conversation"]["tutor"], api_key=API_KEY)
-REVIEWER_MODEL = ChatOpenAI(model=MODELS["conversation"]["reviewer"], api_key=API_KEY)
+MODE = Mode
+
+TUTOR_MODEL = ChatOpenAI(model=MODELS[Mode]["tutor"], api_key=API_KEY)
+REVIEWER_MODEL = ChatOpenAI(model=MODELS[Mode]["reviewer"], api_key=API_KEY)
 
 
 def resolve_episode_dir() -> Path:

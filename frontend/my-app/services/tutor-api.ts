@@ -7,27 +7,15 @@ export type Topic = {
   difficulty: "easy" | "medium" | "hard";
 };
 
-type Topics = {
-  topics: Topic[];
-};
-
 export type OpenerPayload = {
   response_spanish: string;
   response_english: string;
   response_audio: string | null;
 };
 
-export type EpisodeTopicsResponse = {
-  status: string;
-  episode: number;
-  topics: Topics;
-  opener: OpenerPayload | null;
-};
 
-export type SavedEpisodeTopicsResponse = {
-  status: string;
+export type EpisodeResponse = {
   episode: number;
-  topics: Topics;
   opener: OpenerPayload | null;
 };
 
@@ -153,21 +141,16 @@ export const checkTutorServer = async () => {
   return payload.status === "ok";
 };
 
-export const requestEpisodeTopics = (episode: number) =>
-  requestJson<EpisodeTopicsResponse>("/episode", {
+export const requestSelectedEpisode = (episode: number) =>
+  requestJson<EpisodeResponse>("/episode/selected", {
     method: "POST",
     body: JSON.stringify({ episode }),
   });
 
-export const requestSavedEpisodeTopics = () =>
-  requestJson<SavedEpisodeTopicsResponse>("/episode/saved", {
+export const requestSavedEpisode = () =>
+  requestJson<EpisodeResponse>("/episode/saved", {
     method: "GET",
   });
-
-export const requestCurrentEpisode = () => 
-  requestJson<CurrentEpisode>("/episode/current", {
-    method: "GET"
-  })
 
 export const sendChatMessage = (userSentence: string) =>
   requestJson<TutorApiChatResponse>("/chat", {

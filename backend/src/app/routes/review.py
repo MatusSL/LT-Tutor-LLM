@@ -1,5 +1,4 @@
 import random
-from typing import List
 
 from fastapi import APIRouter, HTTPException
 from httpx import HTTPError
@@ -13,7 +12,7 @@ from app.core.build_tutor_core import _tutor_core_instance
 router = APIRouter()
 
 
-def pick_random_n_mistakes(mistakes: List[MistakeModel], n: int) -> List[MistakeModel]:
+def pick_random_n_mistakes(mistakes: list[MistakeModel], n: int) -> list[MistakeModel]:
     if len(mistakes) <= n:
         return mistakes[:]
     return random.sample(mistakes, n)

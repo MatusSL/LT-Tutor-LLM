@@ -1,7 +1,9 @@
 from app.schemas.llm import Correction, ErrorCandidate
 
 
-def make_error(word: str, span: list[int], correction: str = "corrected") -> ErrorCandidate:
+def make_error(
+    word: str, span: list[int], correction: str = "corrected"
+) -> ErrorCandidate:
     return ErrorCandidate(
         word=word,
         translation="",

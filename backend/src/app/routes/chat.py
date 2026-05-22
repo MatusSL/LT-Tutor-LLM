@@ -7,18 +7,19 @@ from httpx import HTTPError
 from postgrest import APIError
 
 from app.core.build_tutor_core import _tutor_core_instance
-from app.schemas.api import ChatResponse, UserInput, TranscribeResponse
+from app.schemas.api import ChatResponse, ChatRequest, TranscribeResponse
 from app.services import stt_service, tts_service
 
 router = APIRouter()
 
 
 @router.post("/chat", response_model=ChatResponse)
-def chat_endpoint(user_input: UserInput):
+def chat_endpoint(request: ChatRequest):
     try:
         result = _tutor_core_instance.handle_message(
-            user_input=user_input.user_sentence
+            mode=request.mode, user_input=request.user_sentence
         )
+
     except (HTTPError, APIError):
         raise HTTPException(status_code=503, detail="Database unavailable")
 

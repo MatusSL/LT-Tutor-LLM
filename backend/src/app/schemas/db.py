@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Literal
+from typing import Literal
 from pydantic import BaseModel, Field
 from enum import Enum
 
@@ -85,14 +85,14 @@ class UserModel(BaseModel):
 class PhraseQuiz(BaseModel):
     phrase: str
     correct_answer: str
-    options: List[str]
+    options: list[str]
 
 
 class FillBlank(BaseModel):
     sentence: str
     blank_index: int
     correct_word: str
-    options: List[str]
+    options: list[str]
     translation: str
 
 
@@ -110,10 +110,10 @@ class ErrorCorrection(BaseModel):
 
 
 class ReviewData(BaseModel):
-    flashcards: List[Flashcard]
-    phrase_quiz: List[PhraseQuiz]
-    blank_words: List[FillBlank]
-    error_corrections: List[ErrorCorrection]
+    flashcards: list[Flashcard]
+    phrase_quiz: list[PhraseQuiz]
+    blank_words: list[FillBlank]
+    error_corrections: list[ErrorCorrection]
 
 
 class DistractionModel(BaseModel):

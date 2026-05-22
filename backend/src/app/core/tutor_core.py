@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -7,14 +6,13 @@ from concurrent.futures import ThreadPoolExecutor
 from app.core.session_state import SessionState
 from app.core.session_manager import SessionManager
 
-from app.schemas.api import ChatResponse
+from app.schemas.api import ChatResponse, Mode
 from app.schemas.constants import CoreServices
 from app.schemas.db import Language, MistakeModel
 from app.schemas.llm import Correction, OpenerResponse, TutorResponse
-from app.schemas.types import Context, UserInputAnalysis
+from app.schemas.types import Context, UserContextData, UserInputAnalysis
 
 logger = logging.getLogger(__name__)
-
 
 class TutorCore:
     def __init__(self, core_services: CoreServices):
@@ -36,14 +34,14 @@ class TutorCore:
         )
         return opener
 
-    def handle_message(self, user_input: str) -> ChatResponse:
-        # if len(self.session_state.vocabulary) == 0:
-        #     self.session_state.vocabulary = self.vocabulary.words
-
+    def handle_message(self, mode: Mode, user_input: str) -> ChatResponse:
         reply, response = self.tutor.reply(
-            user_input=user_input,
-            context=self.session_state.context,
-            vocabulary=self.session_state.episode_vocabulary,
+            UserContextData(
+                mode=mode,
+                user_input=user_input,
+                context=self.session_state.context,
+                scope=self.session_state.scope
+            )
         )
 
         logger.debug(f"---- Reply ---- \n{reply}\n")
@@ -72,13 +70,9 @@ class TutorCore:
         correction = response.correction
 
         if correction is None:
-            # self.update_user_vocabulary(response=response)
             return
 
         error_count = len(correction.error_candidates)
-
-        # if error_count <= 1:
-        #     self.update_user_vocabulary(response=response)
 
         if error_count > 0:
             self._executor.submit(self.update_error_words, correction)
@@ -88,8 +82,8 @@ class TutorCore:
         with self._vocab_lock:
             self.vocabulary.update_all_mistakes(mistakes=mistake_models)
 
-    def get_mistake_models_for_correction(self, correction: Correction) -> List[MistakeModel]:
-        mistake_models: List[MistakeModel] = []
+    def get_mistake_models_for_correction(self, correction: Correction) -> list[MistakeModel]:
+        mistake_models: list[MistakeModel] = []
 
         for mistake in correction.error_candidates:
             try:

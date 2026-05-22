@@ -13,12 +13,15 @@ from app.schemas.types import UserInputAnalysis
 # the logic that depends on that data.
 # ---------------------------------------------------------------------------
 
+
 class StubSupabaseResponse:
     """Stub for a Supabase query response — always returns the same rows."""
+
     def __init__(self, words: list[str]):
         # Mimic the .data attribute that Vocabulary.get_words_from_response reads
-        self.data = [{"word": w, "updated_at": "2024-01-01T00:00:00+00:00"}
-                     for w in words]
+        self.data = [
+            {"word": w, "updated_at": "2024-01-01T00:00:00+00:00"} for w in words
+        ]
 
 
 class StubSupabaseClient:
@@ -31,6 +34,7 @@ class StubSupabaseClient:
     Each method returns `self` so chaining works, and execute() returns the
     canned StubSupabaseResponse.
     """
+
     def __init__(self, words: list[str]):
         self._response = StubSupabaseResponse(words)
 
@@ -47,6 +51,7 @@ class StubSupabaseClient:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def vocab():
@@ -166,6 +171,7 @@ class TestVerifyAndUpdateVocabulary:
 # Tests — load_vocabulary using a stub
 # ---------------------------------------------------------------------------
 
+
 class TestLoadVocabularyWithStub:
     """
     These tests replace the Supabase database with a stub.
@@ -179,6 +185,7 @@ class TestLoadVocabularyWithStub:
         """Helper: patch get_supabase and return a fresh Vocabulary instance."""
         with patch("app.services.vocabulary.get_supabase", return_value=stub):
             from app.services.vocabulary import Vocabulary
+
             return Vocabulary()
 
     # -- load_vocabulary() ---------------------------------------------------
@@ -216,7 +223,7 @@ class TestLoadVocabularyWithStub:
     def test_duplicate_words_collapsed_into_set(self):
         """
         Even if the DB somehow returns the same word twice, a set deduplicates.
-        This tests that our data structure choice (Set[str]) is correct.
+        This tests that our data structure choice (set[str]) is correct.
         """
         stub = StubSupabaseClient(["hablar", "hablar", "comer"])
         vocab = self._make_vocab(stub)
@@ -240,7 +247,7 @@ class TestLoadVocabularyWithStub:
         vocab = self._make_vocab(stub)
 
         with patch("app.services.vocabulary.get_supabase", return_value=stub):
-            vocab._words = vocab.load_vocabulary()   # seed from stub
+            vocab._words = vocab.load_vocabulary()  # seed from stub
 
         new = vocab.find_new_words({"hablar", "vivir", "correr"})
         assert new == {"vivir", "correr"}

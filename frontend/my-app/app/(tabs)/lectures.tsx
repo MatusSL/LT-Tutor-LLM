@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { requestEpisodeTopics, requestCurrentEpisode } from "@/services/tutor-api";
+import { requestSelectedEpisode, requestCurrentEpisode } from "@/services/tutor-api";
 import { C } from "@/constants/colors";
 
 const EPISODE_COUNT = 90;
@@ -52,7 +52,7 @@ export default function LecturesScreen() {
     setLoading(true);
     setError(null);
     try {
-      await requestEpisodeTopics(selectedEpisode);
+      await requestSelectedEpisode(selectedEpisode);
       router.push("/chat");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load episode topics.");

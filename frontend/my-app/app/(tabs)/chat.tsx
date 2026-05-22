@@ -26,11 +26,10 @@ import { File as FSFile, Paths } from "expo-file-system";
 
 import {
   checkTutorServer,
-  requestEpisodeTopics,
-  requestSavedEpisodeTopics,
+  requestSelectedEpisode as postSelectedEpisode,
+  requestSavedEpisode,
   sendChatMessage,
   transcribeAudio,
-  requestCurrentEpisode,
   type OpenerPayload,
 } from "@/services/tutor-api";
 import { C } from "@/constants/colors";
@@ -75,7 +74,7 @@ export default function ChatScreen() {
     const fetchCurrentEpisode = async () => {
       setSetupLoading(true);
       try {
-        const payload = await requestCurrentEpisode();
+        const payload = await requestSavedEpisode();
         setSelectedEpisode(payload.episode);
       } catch {
         setSetupError("Could not load current episode");
@@ -245,7 +244,7 @@ export default function ChatScreen() {
     setSetupError(null);
     setSetupLoading(true);
     try {
-      const payload = await requestSavedEpisodeTopics();
+      const payload = await requestSavedEpisode();
       applyEpisodeTopics(payload);
     } catch (error) {
       setSetupLoading(false);
@@ -259,7 +258,7 @@ export default function ChatScreen() {
     setSetupError(null);
     setSetupLoading(true);
     try {
-      const payload = await requestEpisodeTopics(activeEpisode);
+      const payload = await postSelectedEpisode(activeEpisode);
       applyEpisodeTopics(payload);
     } catch (error) {
       setSetupLoading(false);
@@ -271,8 +270,9 @@ export default function ChatScreen() {
     if (selectedEpisode === 0) return;
     setSetupError(null);
     setSetupLoading(true);
+    
     try {
-      const payload = await requestEpisodeTopics(selectedEpisode);
+      const payload = await postSelectedEpisode(selectedEpisode);
       applyEpisodeTopics(payload);
     } catch (error) {
       setSetupLoading(false);

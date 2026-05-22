@@ -5,7 +5,13 @@ import pytest
 from app.core.tutor_core import TutorCore
 from app.schemas.api import ChatResponse
 from app.schemas.constants import CoreServices
-from app.schemas.db import DistractionModel, ErrorCorrection, FillBlank, Language, PhraseQuiz
+from app.schemas.db import (
+    DistractionModel,
+    ErrorCorrection,
+    FillBlank,
+    Language,
+    PhraseQuiz,
+)
 from app.schemas.llm import Correction, ErrorCandidate
 from app.schemas.llm import TutorResponse
 
@@ -54,16 +60,24 @@ def core(tmp_path) -> TutorCore:
     mock_vocabulary = MagicMock()
     mock_vocabulary.words = {"yo", "hola", "bien"}
     mock_reviewer.generate_distractions.return_value = DistractionModel(
-        phrase_quiz=PhraseQuiz(phrase="", correct_answer="", options=[]), 
-        fill_blank=FillBlank(sentence="", correct_word="", blank_index=0, options=[], translation=""),
-        correction=ErrorCorrection(sentence="", error_index=0, corrected_word="", explanation="", error_type="",)
+        phrase_quiz=PhraseQuiz(phrase="", correct_answer="", options=[]),
+        fill_blank=FillBlank(
+            sentence="", correct_word="", blank_index=0, options=[], translation=""
+        ),
+        correction=ErrorCorrection(
+            sentence="",
+            error_index=0,
+            corrected_word="",
+            explanation="",
+            error_type="",
+        ),
     )
 
     services = CoreServices(
-            tutor=mock_tutor,
-            reviewer=mock_reviewer,
-            vocabulary=mock_vocabulary,
-            episodes_dir=tmp_path,
+        tutor=mock_tutor,
+        reviewer=mock_reviewer,
+        vocabulary=mock_vocabulary,
+        episodes_dir=tmp_path,
     )
 
     return TutorCore(core_services=services)
@@ -127,7 +141,6 @@ class TestAnalyizeResponse:
         analysis = core.analyize_response(resp)
         assert analysis.set_of_words == set()
         assert analysis.misused_words == set()
-
 
 
 class TestGetChatResponseFallback:
@@ -220,11 +233,9 @@ class TestHandleMessage:
                     correction="d",
                     explanation="",
                 ),
-            ]
+            ],
         )
-        self._setup_tutor_reply(
-            core, "a c", Language.SPANISH, correction=correction
-        )
+        self._setup_tutor_reply(core, "a c", Language.SPANISH, correction=correction)
         core.handle_message("a c")
         core.vocabulary.verify_and_update_vocabulary.assert_not_called()
 
