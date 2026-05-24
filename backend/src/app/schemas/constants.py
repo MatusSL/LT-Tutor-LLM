@@ -2,22 +2,20 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.schemas.protocols import (
+    LanguageDetectorProtocol,
     OpenerProtocol,
+    ReviewBuilderProtocol,
     ReviewerProtocol,
     TutorProtocol,
     VocabularyProtocol,
 )
 
-QWEN25_7B_MODEL = "qwen2.5:7b"
-QWEN25_14B_MODEL = "qwen2.5:14b"
-LLAMA32_MODEL = "llama3.2:latest"
-LLAMA31 = "llama3.1:8b"
-
-
 @dataclass
 class CoreServices:
     tutor: TutorProtocol
-    reviewer: ReviewerProtocol
+    review_builder: ReviewBuilderProtocol
     vocabulary: VocabularyProtocol
     episodes_dir: Path
     opener: OpenerProtocol
+    language_detector: LanguageDetectorProtocol
+    reviewer: ReviewerProtocol

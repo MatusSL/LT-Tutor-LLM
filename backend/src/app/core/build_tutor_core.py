@@ -3,7 +3,7 @@ from pathlib import Path
 from langchain_openai import ChatOpenAI
 
 from app.agents.opener import Opener
-from app.agents.reviewer import Reviewer
+from app.agents.review_builder import ReviewBuilder
 from app.agents.tutor import Tutor
 
 from app.core.tutor_core import TutorCore
@@ -58,7 +58,7 @@ def resolve_episode_dir() -> Path:
 
 def build_tutor_core() -> TutorCore:
     tutor = Tutor(model=TUTOR_MODEL)
-    reviewer = Reviewer(model=REVIEWER_MODEL)
+    reviewer = ReviewBuilder(model=REVIEWER_MODEL)
     opener = Opener(model=TUTOR_MODEL)
     vocabulary = Vocabulary()
     episode_dir = resolve_episode_dir()

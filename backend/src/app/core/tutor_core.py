@@ -18,7 +18,7 @@ class TutorCore:
     def __init__(self, core_services: CoreServices):
         self.tutor = core_services.tutor
         self.vocabulary = core_services.vocabulary
-        self.reviewer = core_services.reviewer
+        self.reviewer = core_services.review_builder
         self.opener = core_services.opener
         self.session_manager = SessionManager(core_services.episodes_dir)
 

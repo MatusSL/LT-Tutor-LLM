@@ -16,18 +16,10 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s - %(message)s",
 )
 
+_noise = ["httpcore", "httpx", "hpack", "openai", "python_multipart",
+          "asyncio", "faster_whisper", "language_tool_python", "urllib3"]
 
-for _noisy in (
-    "httpcore",
-    "httpx",
-    "hpack",
-    "openai",
-    "python_multipart",
-    "asyncio",
-    "faster_whisper",
-    "language_tool_python",
-    "urllib3"
-):
+for _noisy in _noise:
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
