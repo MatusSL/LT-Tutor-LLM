@@ -25,6 +25,8 @@ for _noisy in (
     "python_multipart",
     "asyncio",
     "faster_whisper",
+    "language_tool_python",
+    "urllib3"
 ):
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 
@@ -56,3 +58,9 @@ app.include_router(health.router)
 app.include_router(chat.router, dependencies=_auth)
 app.include_router(review.router, dependencies=_auth)
 app.include_router(episode.router, dependencies=_auth)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    # uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    uvicorn.run(app=app, host="0.0.0.0", port=8000)

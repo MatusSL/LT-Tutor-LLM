@@ -27,8 +27,24 @@ MODELS = {
 
 MODE: Mode = 'conversation'
 
-TUTOR_MODEL = ChatOpenAI(model=MODELS[MODE]["tutor"], api_key=API_KEY)
+# TUTOR_MODEL = ChatOpenAI(model=MODELS[MODE]["tutor"], api_key=API_KEY)
 REVIEWER_MODEL = ChatOpenAI(model=MODELS[MODE]["reviewer"], api_key=API_KEY)
+
+TUTOR_MODEL = ChatOpenAI(
+    base_url="http://localhost:1234/v1",
+    api_key=SecretStr("lm-studio"),
+    # model="openai/gpt-oss-20b",
+    model="google/gemma-3-12b",
+    temperature=1.0,
+)
+
+# REVIEWER_MODEL = ChatOpenAI(
+#     base_url="http://localhost:1234/v1",
+#     api_key=SecretStr("lm-studio"),
+#     model="openai/gpt-oss-20b",
+#     temperature=1.0,
+# )
+
 
 
 def resolve_episode_dir() -> Path:
