@@ -13,10 +13,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { requestSelectedEpisode, requestCurrentEpisode } from "@/services/tutor-api";
+import { requestSelectedEpisode, requestSavedEpisode } from "@/services/tutor-api";
 import { C } from "@/constants/colors";
 
 const EPISODE_COUNT = 90;
+const ITEM_HEIGHT = 49;
 
 export default function LecturesScreen() {
   const [selectedEpisode, setSelectedEpisode] = useState(0);
@@ -35,7 +36,7 @@ export default function LecturesScreen() {
     const fetchCurrentEpisode = async () => {
       setError(null);
       try {
-        const payload = await requestCurrentEpisode();
+        const payload = await requestSavedEpisode();
         setCurrentEpisode(payload.episode);
         setSelectedEpisode(payload.episode);
       } catch {
@@ -130,6 +131,14 @@ export default function LecturesScreen() {
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            getItemLayout={(_, index) => ({
+              length: ITEM_HEIGHT,
+              offset: ITEM_HEIGHT * index,
+              index,
+            })}
+            initialScrollIndex={
+              currentEpisode ? Math.max(currentEpisode - 1, 0) : undefined
+            }
           />
 
           <View style={styles.footer}>
