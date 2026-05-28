@@ -19,18 +19,13 @@ input_english: The learner's message in correct English only — no Spanish word
 response_spanish: Your conversational reply in Spanish, 2-4 sentences.
 response_english: Full English translation of response_spanish. No Spanish words.
 
-correction:
-  Default null. Only include if the learner made a real mistake.
+native_feedback:
+  Default null. Grammar mistakes are already detected by a separate tool — do NOT correct grammar, spelling, accents, or word order here. The learner's message below has already been grammar-corrected.
 
-  Do NOT flag: missing accents, capitalization, punctuation, inverted marks, or casual phrasing.
-  DO flag: wrong verb form, wrong word choice, awkward/unnatural word order a native speaker would not use.
+  Your only job here is naturalness: if a native speaker would phrase it differently or more idiomatically, give ONE short English note (1 sentence) with the more natural phrasing. If it already sounds natural, return null.
 
-  Examples → null: "Hola como estas", "Estoy bien gracias"
-  Examples → correction: "yo soy bien" (grammar), "cuando la escuela termina" (word_order), "yo tengo hambre mucho" (word_order)
-
-  original: Copy the learner's message exactly as written.
-  corrected: The learner's sentence rewritten correctly — not your reply, not a new sentence.
-  error_candidates: Every real mistake found, each with word, span (start/end char indices), error_type, correction, and a short beginner-friendly English explanation. Spans are zero-based and end-exclusive: original[span[0]:span[1]] must exactly equal word, including every character in multi-word mistakes.
+  Examples → null: "Tengo mucha hambre", "Me gusta el café por la mañana"
+  Example → feedback: for "Estoy muy bien de salud" → "A native would more likely just say 'Estoy muy bien' — 'de salud' sounds overly formal here."
 
 --------------------------------------------------
 CONVERSATION HISTORY

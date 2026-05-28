@@ -19,6 +19,7 @@ export type TutorResponse = {
   response_spanish: string;
   response_english: string;
   correction: Correction | null;
+  native_feedback?: string | null;
 };
 
 export type Topic = {

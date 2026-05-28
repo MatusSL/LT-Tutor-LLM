@@ -9,19 +9,21 @@ from app.core.session_manager import SessionManager
 from app.schemas.api import ChatResponse, Mode
 from app.schemas.constants import CoreServices
 from app.schemas.db import Language, MistakeModel
-from app.schemas.llm import Correction, OpenerResponse, TutorResponse
-from app.schemas.types import Context, UserContextData, UserInputAnalysis
+from app.schemas.llm import Correction, ErrorCandidate, OpenerResponse, TutorResponse
+from app.schemas.types import Context, CorrectionFeedback, UserContextData, UserInputAnalysis
 
 logger = logging.getLogger(__name__)
 
 class TutorCore:
     def __init__(self, core_services: CoreServices):
         self.tutor = core_services.tutor
-        self.vocabulary = core_services.vocabulary
-        self.reviewer = core_services.review_builder
         self.opener = core_services.opener
-        self.session_manager = SessionManager(core_services.episodes_dir)
+        self.review_builder = core_services.review_builder
+        self.reviewer = core_services.reviewer
+        self.language_detector = core_services.language_detector
 
+        self.vocabulary = core_services.vocabulary
+        self.session_manager = SessionManager(core_services.episodes_dir)
         self.session_state = SessionState()
         self._vocab_lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=1)
@@ -35,26 +37,35 @@ class TutorCore:
         return opener
 
     def handle_message(self, mode: Mode, user_input: str) -> ChatResponse:
+        self.session_state.language = self.language_detector.detect_language(user_input)
+
+        if self.session_state.language == Language.UNKNOWN:
+            return self.get_chat_response_fallback()
+
+        if self.session_state.language == Language.SPANISH:
+            feedback = self.handle_spanish_input(user_input)
+        else:
+            feedback = self.handle_english_input(user_input)
+
+        corrected_input = feedback.correction.corrected if feedback.correction else None
+
         reply, response = self.tutor.reply(
             UserContextData(
                 mode=mode,
                 user_input=user_input,
                 context=self.session_state.context,
-                scope=self.session_state.scope
+                scope=self.session_state.scope,
+                corrected_input=corrected_input,
             )
         )
+
+        # Grammar errors come from language-tool, not the LLM.
+        response.correction = feedback.correction
 
         logger.debug(f"---- Reply ---- \n{reply}\n")
         logger.debug(f"---- Response ---- \n{response}\n")
 
         self.add_messages_to_state(user_message=user_input, reply_message=reply)
-
-        self.session_state.language = response.input_language
-        if self.session_state.language == Language.UNKNOWN:
-            return self.get_chat_response_fallback()
-
-        if self.session_state.language == Language.SPANISH:
-            self.handle_spanish_input(response=response)
 
         return ChatResponse(response=reply, tutor_response=response)
 
@@ -65,17 +76,53 @@ class TutorCore:
                 Context(role="response", content=reply_message),
             ]
         )
+    
+    def correct_user_sentence(self, sentence: str) -> Correction | None:
+        err_candidates = self.reviewer.review_sentence(sentence)
 
-    def handle_spanish_input(self, response: TutorResponse) -> None:
-        correction = response.correction
+        if not err_candidates:
+            return None
 
-        if correction is None:
-            return
+        return Correction(
+            original=sentence,
+            corrected=self._apply_corrections(sentence, err_candidates),
+            error_candidates=err_candidates,
+        )
 
-        error_count = len(correction.error_candidates)
+    @staticmethod
+    def _apply_corrections(sentence: str, candidates: list[ErrorCandidate]) -> str:
+        # Apply right-to-left so earlier spans stay valid as we splice.
+        corrected = sentence
+        for candidate in sorted(candidates, key=lambda c: c.span[0], reverse=True):
+            if not candidate.correction:
+                continue
+            start, end = candidate.span
+            corrected = corrected[:start] + candidate.correction + corrected[end:]
+        return corrected
 
-        if error_count > 0:
+    def handle_spanish_input(self, sentence: str) -> CorrectionFeedback:
+        correction = self.correct_user_sentence(sentence)
+
+        feedback = CorrectionFeedback(
+                input_spanish=sentence,
+                input_english=None,
+                input_language=self.session_state.language,
+                correction=correction
+            )
+        
+        if correction and len(correction.error_candidates) > 0:
             self._executor.submit(self.update_error_words, correction)
+
+        return feedback
+    
+    def handle_english_input(self, sentence: str) -> CorrectionFeedback:
+        return CorrectionFeedback(
+            input_spanish=None,
+            input_english=sentence,
+            input_language=self.session_state.language,
+            correction=None
+        )
+        
 
     def update_error_words(self, correction: Correction) -> None:
         mistake_models = self.get_mistake_models_for_correction(correction=correction)
@@ -87,7 +134,7 @@ class TutorCore:
 
         for mistake in correction.error_candidates:
             try:
-                distractions = self.reviewer.generate_distractions(
+                distractions = self.review_builder.generate_distractions(
                     word=mistake.word, sentence=correction.original
                 )
             except RuntimeError as e:

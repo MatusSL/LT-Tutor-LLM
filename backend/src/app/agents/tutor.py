@@ -46,15 +46,19 @@ class Tutor(TutorProtocol):
         conversation = "\n".join(
             f"{m.role}: {m.content}" for m in user_ctx_data.context
         )
-        user_input = user_ctx_data.user_input
+        user_input = user_ctx_data.corrected_input or user_ctx_data.user_input
 
         if user_ctx_data.mode == "conversation":
             return MERGED_TUTOR_PROMPT.format(
                 history=conversation, user_input=user_input
             )
-
-        unlocked_tenses = ", ".join(sorted(user_ctx_data.scope.tenses)) or "(none yet)"
-        unlocked_structures = ", ".join(sorted(user_ctx_data.scope.structures)) or "(none yet)"
+        
+        if user_ctx_data.scope is None:
+            unlocked_tenses = "(none yet)"
+            unlocked_structures = "(none yet)"
+        else:
+            unlocked_tenses = ", ".join(user_ctx_data.scope.tenses)
+            unlocked_structures = ", ".join(user_ctx_data.scope.structures)
 
         return LT_TUTOR_PROMPT.format(
             LEARNER_LEVEL=LEARNER_LEVEL,

@@ -53,6 +53,8 @@ app.include_router(episode.router, dependencies=_auth)
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    # uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    uvicorn.run(app=app, host="0.0.0.0", port=8000)
+    host = os.getenv("APP_HOST", "0.0.0.0")
+    port = int(os.getenv("APP_PORT", "8000"))
+    uvicorn.run(app=app, host=host, port=port)

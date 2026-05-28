@@ -18,6 +18,8 @@ dependencies = [
     "bcrypt>=5.0.0",
     "language-tool-python>=3.4.0",
     "lingua-language-detector>=2.2.0",
+    "python-dotenv>=1.2.2",
+    "pydantic>=2.12.5",
 ]
 
 [tool.setuptools.packages.find]
