@@ -31,7 +31,8 @@ class Tutor(TutorProtocol):
             )
             return self._fallback(user_ctx_data.user_input)
 
-    def _fallback(self, user_input: str) -> tuple[str, TutorResponse]:
+    @staticmethod
+    def _fallback(user_input: str) -> tuple[str, TutorResponse]:
         reply = "Lo siento, hubo un problema. ¿Puedes intentarlo otra vez?"
         return reply, TutorResponse(
             input_spanish=user_input,
@@ -42,7 +43,8 @@ class Tutor(TutorProtocol):
             correction=None,
         )
 
-    def get_prompt_by_mode(self, user_ctx_data: UserContextData) -> str:
+    @staticmethod
+    def get_prompt_by_mode(user_ctx_data: UserContextData) -> str:
         conversation = "\n".join(
             f"{m.role}: {m.content}" for m in user_ctx_data.context
         )

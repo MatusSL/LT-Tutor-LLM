@@ -59,7 +59,7 @@ class TutorCore:
             )
         )
 
-        # Grammar errors come from language-tool, not the LLM.
+        # Grammar errors come from LanguageTool, not the LLM.
         response.correction = feedback.correction
 
         logger.debug(f"---- Reply ---- \n{reply}\n")
@@ -138,7 +138,9 @@ class TutorCore:
                     word=mistake.word, sentence=correction.original
                 )
             except RuntimeError as e:
-                logger.warning(f"Skipping mistake '{mistake.word}'", exc_info=e)
+                logger.warning("Skipping mistake %s",
+                               mistake.word,
+                               exc_info=e)
                 continue
 
             mistake_model = MistakeModel(
@@ -153,7 +155,8 @@ class TutorCore:
 
         return mistake_models
 
-    def analyze_response(self, tutor_response: TutorResponse) -> UserInputAnalysis:
+    @staticmethod
+    def analyze_response(tutor_response: TutorResponse) -> UserInputAnalysis:
         used_words = set(tutor_response.input_spanish.split())
         correction = tutor_response.correction
 
@@ -167,7 +170,8 @@ class TutorCore:
 
         return UserInputAnalysis(set_of_words=used_words, misused_words=misused_words)
 
-    def get_chat_response_fallback(self):
+    @staticmethod
+    def get_chat_response_fallback():
         return ChatResponse(
             response="Sorry, I couldn't understand that. Could you repeat it?",
             tutor_response=TutorResponse(
