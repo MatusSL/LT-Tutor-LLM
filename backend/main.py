@@ -1,14 +1,13 @@
-from fastapi import Depends, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Request
-from fastapi.responses import JSONResponse
+import logging
+import os
+from contextlib import asynccontextmanager
 
 from app.dependencies import verify_api_key
-
-import os
-import logging
-
 from app.routes import chat, episode, health, review
+from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from src.app.services.vocabulary import pool
 
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
 logging.basicConfig(
@@ -16,8 +15,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s - %(message)s",
 )
 
-
-for _noisy in (
+_noise = [
     "httpcore",
     "httpx",
     "hpack",
@@ -26,14 +24,24 @@ for _noisy in (
     "asyncio",
     "faster_whisper",
     "language_tool_python",
-    "urllib3"
-):
+    "urllib3",
+    "watchfiles",
+]
+
+for _noisy in _noise:
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
 
-app = FastAPI()
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    pool.open()
+    yield
+    pool.close()
+
+
+app = FastAPI(lifespan=_lifespan)
 
 
 app.add_middleware(
@@ -59,8 +67,11 @@ app.include_router(chat.router, dependencies=_auth)
 app.include_router(review.router, dependencies=_auth)
 app.include_router(episode.router, dependencies=_auth)
 
-
 if __name__ == "__main__":
+    import os
+
     import uvicorn
-    # uv run uvicorn main:app --host 100.85.107.73 --port 8000 --reload
-    uvicorn.run(app=app, host="100.85.107.73", port=8000)
+
+    host = os.getenv("APP_HOST", "0.0.0.0")
+    port = int(os.getenv("APP_PORT", "8000"))
+    uvicorn.run(app=app, host=host, port=port)

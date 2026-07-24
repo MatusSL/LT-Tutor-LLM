@@ -137,6 +137,7 @@ export function UserBubble({ text, tutor, onTranslate, onCorrection }: Props) {
   const [showCorrection, setShowCorrection] = useState(false);
 
   const hasCorrection = !!tutor?.correction;
+  const nativeFeedback = tutor?.native_feedback?.trim() || null;
   const translationText = tutor
     ? tutor.input_language === "spanish"
       ? tutor.input_english
@@ -220,6 +221,13 @@ export function UserBubble({ text, tutor, onTranslate, onCorrection }: Props) {
               <Text style={styles.errorExplanation}>{ec.explanation}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {nativeFeedback && (
+        <View style={styles.nativeFeedbackBox}>
+          <Text style={styles.nativeFeedbackLabel}>Native note</Text>
+          <Text style={styles.nativeFeedbackText}>{nativeFeedback}</Text>
         </View>
       )}
     </View>
@@ -330,6 +338,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   errorExplanation: {
+    color: C.text.secondary,
+    lineHeight: 20,
+    fontSize: 13,
+  },
+  nativeFeedbackBox: {
+    marginTop: 8,
+    backgroundColor: C.surfaceAlt,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: C.border,
+  },
+  nativeFeedbackLabel: {
+    color: C.accent,
+    fontWeight: "700",
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  nativeFeedbackText: {
     color: C.text.secondary,
     lineHeight: 20,
     fontSize: 13,

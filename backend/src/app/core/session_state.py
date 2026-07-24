@@ -13,6 +13,5 @@ class SessionState:
     episode_vocabulary: set[str] = field(default_factory=set)
     max_episode_completed: int | None = None
     scope: UserScope = field(
-        default_factory=lambda: UserScope(
-            tenses=set(), structures=set())
+        default_factory=lambda: UserScope(tenses=set(), structures=set())
     )

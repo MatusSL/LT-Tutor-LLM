@@ -47,6 +47,7 @@ export type TutorApiChatResponse = {
         explanation: string;
       }[];
     } | null;
+    native_feedback?: string | null;
   };
   response_audio: string | null;
 };

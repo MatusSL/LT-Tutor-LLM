@@ -1,11 +1,13 @@
 from typing import Protocol
 
-from app.schemas.llm import OpenerResponse, TutorResponse
-from app.schemas.db import DistractionModel, MistakeModel, ReviewData
+from psycopg import Connection
+
+from app.schemas.db import DistractionModel, Language, MistakeModel, ReviewData
+from app.schemas.llm import ErrorCandidate, OpenerResponse, TutorResponse
 from app.schemas.types import UserContextData
 
 
-class ReviewerProtocol(Protocol):
+class ReviewBuilderProtocol(Protocol):
     def generate_distractions(self, word: str, sentence: str) -> DistractionModel: ...
 
     def generate_review(self, mistakes: list[MistakeModel]) -> ReviewData: ...
@@ -20,10 +22,20 @@ class OpenerProtocol(Protocol):
 
 
 class VocabularyProtocol(Protocol):
-    def update_max_episode_completed(self, episode: int) -> None: ...
+    def update_max_episode_completed(self, conn: Connection, new_max: int) -> None: ...
 
-    def get_max_episode_completed(self) -> int: ...
+    def get_max_episode_completed(self, conn: Connection) -> int: ...
 
-    def update_all_mistakes(self, mistakes: list[MistakeModel]) -> None: ...
+    # def update_all_mistakes(
+    #     self, conn: Connection, mistakes: list[MistakeModel]
+    # ) -> None: ...
 
-    def get_all_mistakes(self) -> list[MistakeModel]: ...
+    # def get_all_mistakes(self, conn: Connection) -> list[MistakeModel]: ...
+
+
+class LanguageDetectorProtocol(Protocol):
+    def detect_language(self, text: str) -> Language: ...
+
+
+class ReviewerProtocol(Protocol):
+    def review_sentence(self, sentence: str) -> list[ErrorCandidate] | None: ...

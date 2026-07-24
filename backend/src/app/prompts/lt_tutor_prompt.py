@@ -75,17 +75,10 @@ input_english: The learner's message in correct English only — no Spanish word
 response_spanish: Your full tutor reply verbatim. In LT mode this is typically English-dominant with embedded Spanish target words/examples — put the whole reply here as you'd say it.
 response_english: Pure English version of your reply, with any Spanish target words rendered as plain English (used for fully-English display).
 
-correction:
-  Default null. Only include if the learner made a real Spanish mistake AND you're addressing it this turn.
+native_feedback:
+  Default null. Grammar mistakes are detected by a separate tool — do NOT correct grammar, spelling, accents, or word order here. The learner's message below has already been grammar-corrected.
 
-  Do NOT flag: missing accents, capitalization, punctuation, inverted marks, casual phrasing.
-  DO flag: wrong verb form, wrong word choice, awkward/unnatural word order a native speaker would not use.
-
-  Note: In LT mode you usually do NOT auto-correct — you lead the learner to self-correct. Only populate this field when you've decided the mistake is significant enough to surface as a tracked error for later review. A small slip you're handling conversationally with a leading question does not need to be logged here.
-
-  original: Copy the learner's message exactly as written.
-  corrected: The learner's sentence rewritten correctly — not your reply, not a new sentence.
-  error_candidates: Every real mistake found, each with word, span (start/end char indices), error_type, correction, and a short beginner-friendly English explanation. Spans are zero-based and end-exclusive: original[span[0]:span[1]] must exactly equal word, including every character in multi-word mistakes.
+  Your only job here is naturalness: if a native speaker would phrase the learner's Spanish differently or more idiomatically, give ONE short English note (1 sentence) with the more natural phrasing. If it already sounds natural, return null. This is a quiet side-note for later review — it does not replace your leading-question teaching style in the reply.
 
 ================================================================
 EXAMPLES OF CORRECT LT-STYLE TURNS

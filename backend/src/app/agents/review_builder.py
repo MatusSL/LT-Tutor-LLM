@@ -11,7 +11,7 @@ from app.schemas.db import (
     PhraseQuiz,
     ReviewData,
 )
-from app.schemas.protocols import ReviewerProtocol
+from app.schemas.protocols import ReviewBuilderProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ RULES
 """
 
 
-class Reviewer(ReviewerProtocol):
+class ReviewBuilder(ReviewBuilderProtocol):
     def __init__(self, model: BaseChatModel) -> None:
         self.model = model.with_structured_output(DistractionModel)
 
@@ -87,18 +87,20 @@ class Reviewer(ReviewerProtocol):
             blank_words=fill_in_the_blank,
         )
 
-    def generate_flashcards(self, mistakes: list[MistakeModel]) -> list[Flashcard]:
+    @staticmethod
+    def generate_flashcards(mistakes: list[MistakeModel]) -> list[Flashcard]:
         return [Flashcard(origin=m.origin, translation=m.translation) for m in mistakes]
 
-    def generate_phrase_quiz(self, mistakes: list[MistakeModel]) -> list[PhraseQuiz]:
+    @staticmethod
+    def generate_phrase_quiz(mistakes: list[MistakeModel]) -> list[PhraseQuiz]:
         return [m.distractions.phrase_quiz for m in mistakes]
 
-    def generate_fill_in_the_blank(
-        self, mistakes: list[MistakeModel]
-    ) -> list[FillBlank]:
+    @staticmethod
+    def generate_fill_in_the_blank(mistakes: list[MistakeModel]) -> list[FillBlank]:
         return [m.distractions.fill_blank for m in mistakes]
 
+    @staticmethod
     def generate_error_correction(
-        self, mistakes: list[MistakeModel]
+        mistakes: list[MistakeModel],
     ) -> list[ErrorCorrection]:
         return [m.distractions.correction for m in mistakes]

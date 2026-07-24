@@ -1,18 +1,36 @@
-from postgrest import APIResponse
-from postgrest.exceptions import APIError
-from httpx import HTTPError
-
 import logging
+import os
+from typing import Any
 
-from app.database.supabase_setup import get_supabase
-from app.schemas.db import MistakeModel, Table, User, UserModel, WordModel
+import psycopg
+from dotenv import load_dotenv
+from psycopg import Connection
+from psycopg_pool import ConnectionPool
 
-# from app.schemas.types import UserInputAnalysis
+from app.schemas.db import (
+    MistakeModel,
+)
 from app.schemas.protocols import VocabularyProtocol
 
-# from app.utils.helpers import normalize_user_input
+load_dotenv()
+
+DB_URL = os.environ.get("DB_CONNECTION")
+
+if not DB_URL:
+    raise ValueError("Supabase connection string must be set")
+
 
 logger = logging.getLogger(__name__)
+
+
+pool = ConnectionPool(
+    DB_URL, min_size=1, max_size=5, check=ConnectionPool.check_connection
+)
+
+
+def get_connection():
+    with pool.connection() as conn:
+        yield conn
 
 
 class Vocabulary(VocabularyProtocol):
@@ -25,145 +43,109 @@ class Vocabulary(VocabularyProtocol):
     #         self._words = self.load_vocabulary()
     #     return self._words
 
-    # # * Database operation
-    # def load_vocabulary(self) -> set[str]:
-    #     try:
-    #         response = (
-    #             get_supabase()
-    #                 .table(Table.WORDS)
-    #                 .select("*")
-    #                 .execute()
-    #         )
+    @staticmethod
+    def _query(
+        conn: Connection, sql: str, params: dict | list | None = None
+    ) -> list[Any] | None:
+        try:
+            with conn.cursor() as cur:
+                result = cur.execute(sql, params).fetchall()  # type: ignore
+                return result
 
-    #         vocabulary = self.get_words_from_response(response)
-    #         return vocabulary
+        except psycopg.OperationalError:
+            logger.exception("Operational Error occurred while querying DB")
+            return None
 
-    #     except HTTPError as e:
-    #         logger.error("DB could not be reached.", exc_info=e)
-    #         raise
+        except psycopg.InternalError:
+            logger.exception("Internal Error occurred while querying DB")
+            return None
 
-    #     except APIError as e:
-    #         logger.error(
-    #             "Error while fetching vocabulary from database.",
-    #             exc_info=e
-    #         )
-    #         raise
+        except psycopg.ProgrammingError:
+            logger.exception("Programming Error occurred while querying DB")
+            return None
+
+        except psycopg.DatabaseError:
+            logger.exception("Database Error occurred while querying DB")
+            return None
 
     # * Database operation
-    def update_max_episode_completed(self, episode: int) -> None:
-        try:
-            (
-                get_supabase()
-                .table(Table.USERS)
-                .update({User.MAX_EPISODE: episode})
-                .eq(User.DISPLAY_NAME, "matus")
-                .execute()
-            )
+    def load_vocabulary(self, conn: Connection) -> list[str]:
+        sql = """--sql
+            SELECT *
+            FROM words
+        """
 
-        except (HTTPError, APIError) as e:
-            logger.warning("Failed to save episode progress.", exc_info=e)
+        words = self._query(conn, sql)
+
+        if words is None:
+            logger.warning("DB Error occurred while getting words")
+            return []
+
+        return words
 
     # * Database operation
-    def get_max_episode_completed(self) -> int:
-        try:
-            response = (
-                get_supabase()
-                .table(Table.USERS)
-                .select("*")
-                .eq(User.DISPLAY_NAME, "matus")
-                .execute()
-            )
-            if len(response.data) == 0:
-                return 0
+    def update_max_episode_completed(self, conn: Connection, new_max: int) -> None:
+        sql = """--sql
+            UPDATE users
+            SET max_episode = %d
+            WHERE display_name = %s
+            RETURNING id
+        """
 
-            return UserModel.model_validate(response.data[0]).max_episode
+        res = self._query(conn, sql, [new_max, "matus"])
 
-        except HTTPError as e:
-            logger.error("DB connection failed.", exc_info=e)
-            raise
+        if not res:
+            logger.warning("DB error occurred while updating max episode")
 
-        except APIError as e:
-            logger.error(f"DB query failed {e.message}.", exc_info=e)
-            raise
+    # * Database operation
+    def get_max_episode_completed(self, conn: Connection) -> int:
+        sql = """--sql
+            SELECT max_episode
+            FROM users
+            WHERE display_name = %s
+        """
 
-    # # * Database operation
-    # def update_word(self, word: str) -> None:
-    #     if word is None or word.strip() == "":
-    #         return
+        rows = self._query(conn, sql, ["matus"])
+        if not rows:
+            logger.warning("DB Error occurred while getting max episode")
+            return -1
 
-    #     payload = WordModel(word=word)
-
-    #     try:
-    #         (
-    #         get_supabase()
-    #             .table(Table.WORDS)
-    #             .upsert(
-    #                 payload.model_dump(exclude_none=True),
-    #                 on_conflict="word"
-    #             )
-    #             .execute()
-    #         )
-
-    #     except (HTTPError, APIError) as e:
-    #         logger.warning(f"Failed to update {word=}.", exc_info=e)
+        row: tuple = rows[0]
+        return row[0]
 
     # * Database operation
     def update_mistake(self, mistake: MistakeModel) -> None:
         if mistake.origin is None or mistake.origin.strip() == "":
             return
 
-        try:
-            (
-                get_supabase()
-                .table(Table.MISTAKES)
-                .insert(mistake.model_dump(exclude_none=True))
-                .execute()
-            )
-        except (HTTPError, APIError) as e:
-            logger.warning(f"Failed to update {mistake.origin=}", exc_info=e)
-
-    # * Database operation
-    def update_all_mistakes(self, mistakes: list[MistakeModel]) -> None:
-        for mistake in mistakes:
-            self.update_mistake(mistake)
-
-    # * Database operation
-    def get_all_mistakes(self) -> list[MistakeModel]:
-        try:
-            response = get_supabase().table(Table.MISTAKES).select("*").execute()
-
-            return [MistakeModel.model_validate(row) for row in response.data]
-
-        except HTTPError as e:
-            logger.error("Failed to connect to DB while getting mistakes", exc_info=e)
-            raise
-
-        except APIError as e:
-            logger.error("Failed to query DB while getting mistakes", exc_info=e)
-            raise
+    # # * Database operation
+    # def update_all_mistakes(self, mistakes: list[MistakeModel]) -> None:
+    #     for mistake in mistakes:
+    #         self.update_mistake(mistake)
 
     # # * Database operation
-    # def update_all_words(self, words: set[str]):
-    #     for word in words:
-    #         self.update_word(word)
+    # def get_all_mistakes(self) -> list[MistakeModel]:
+    #     try:
+    #         response = get_supabase().table(Table.MISTAKES).select("*").execute()
 
-    def get_words_from_response(self, response: APIResponse) -> set[str]:
-        result: set[str] = set()
+    #         return [MistakeModel.model_validate(row) for row in response.data]
 
-        for batch in response.data:
-            word_model = WordModel.model_validate(batch)
-            result.add(word_model.word)
+    #     except HTTPError as e:
+    #         logger.error("Failed to connect to DB while getting mistakes", exc_info=e)
+    #         raise
 
-        return result
+    #     except APIError as e:
+    #         logger.error("Failed to query DB while getting mistakes", exc_info=e)
+    #         raise
 
-    # def find_new_words(self, used_words: set[str]) -> set[str]:
-    #     new_words: set[str] = set()
+    # def get_words_from_response(self, response: APIResponse) -> set[str]:
+    #     result: set[str] = set()
 
-    #     for word in used_words:
-    #         if word not in self.words:
-    #             new_words.add(word)
+    #     for batch in response.data:
+    #         word_model = WordModel.model_validate(batch)
+    #         result.add(word_model.word)
 
-    #     return new_words
+    #     return result
 
     def verify_new_words(
         self, new_words: set[str], current_invalid: set[str]
@@ -171,17 +153,3 @@ class Vocabulary(VocabularyProtocol):
         invalid_set = current_invalid
         verified: set[str] = new_words.difference(invalid_set)
         return verified
-
-    # def verify_and_update_vocabulary(self, analysis: UserInputAnalysis) -> set[str]:
-    #     formatted_used_words = normalize_user_input(analysis.set_of_words)
-    #     formatted_misused_words = normalize_user_input(analysis.misused_words)
-
-    #     new_words = self.find_new_words(formatted_used_words)
-    #     if len(new_words) == 0:
-    #         return set()
-
-    #     verified_words = self.verify_new_words(new_words, formatted_misused_words)
-    #     # self.words.update(verified_words)
-
-    #     self.update_all_words(verified_words)
-    #     return verified_words
