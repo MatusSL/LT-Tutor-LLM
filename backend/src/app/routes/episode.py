@@ -1,27 +1,30 @@
-from fastapi import APIRouter, HTTPException
-
-from postgrest.exceptions import APIError
+from fastapi import APIRouter, Depends, HTTPException
 from httpx import HTTPError
+from postgrest.exceptions import APIError
+from psycopg import Connection
 
 from app.core.build_tutor_core import _tutor_core_instance
 from app.schemas.api import EpisodeRequest, EpisodeResponse, OpenerPayload
 from app.services import tts_service
+from app.services.vocabulary import get_connection
 
 router = APIRouter()
 
 
 @router.post("/episode/selected", response_model=EpisodeResponse)
-def set_episode(request: EpisodeRequest) -> EpisodeResponse:
+def set_episode(
+    request: EpisodeRequest, conn: Connection = Depends(get_connection)
+) -> EpisodeResponse:
     episode = request.episode
-    _tutor_core_instance.vocabulary.update_max_episode_completed(episode)
+    _tutor_core_instance.vocabulary.update_max_episode_completed(conn, episode)
     _tutor_core_instance.session_state.max_episode_completed = episode
     load_tutor_scope_for_episode(episode)
     return build_episode_response(episode)
 
 
 @router.get("/episode/saved", response_model=EpisodeResponse)
-def load_saved_episode() -> EpisodeResponse:
-    return build_saved_episode_response()
+def load_saved_episode(conn: Connection = Depends(get_connection)) -> EpisodeResponse:
+    return build_saved_episode_response(conn)
 
 
 def build_episode_response(episode: int) -> EpisodeResponse:
@@ -42,9 +45,9 @@ def build_opener_payload() -> OpenerPayload:
     )
 
 
-def build_saved_episode_response() -> EpisodeResponse:
+def build_saved_episode_response(conn: Connection) -> EpisodeResponse:
     try:
-        episode = _tutor_core_instance.vocabulary.get_max_episode_completed()
+        episode = _tutor_core_instance.vocabulary.get_max_episode_completed(conn)
         _tutor_core_instance.session_state.max_episode_completed = episode
         load_tutor_scope_for_episode(episode)
 

@@ -1,7 +1,11 @@
+import logging
+
 from language_tool_python import LanguageTool, Match
 
 from app.schemas.llm import ErrorCandidate
 from app.schemas.protocols import ReviewerProtocol
+
+logger = logging.getLogger(__name__)
 
 
 class Reviewer(ReviewerProtocol):
@@ -29,8 +33,5 @@ class Reviewer(ReviewerProtocol):
                 )
             )
 
+        logger.debug("Reviewed sentence %s", candidates)
         return candidates
-
-
-if __name__ == "__main__":
-    Reviewer().review_sentence("Yo no sabe.")

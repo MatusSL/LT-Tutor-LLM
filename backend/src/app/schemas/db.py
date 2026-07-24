@@ -1,7 +1,12 @@
 from datetime import datetime, timezone
-from typing import Literal
-from pydantic import BaseModel, Field
 from enum import Enum
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+
+class DatabaseError(Exception):
+    """Raised when exceptions happens while querying DB"""
 
 
 class Language(str, Enum):
@@ -73,7 +78,7 @@ class WordModel(BaseModel):
     )
 
 
-type DistractionType = Literal["flashcards", "quiz", "phrase", "blank"]
+DistractionType = Literal["flashcards", "quiz", "phrase", "blank"]
 
 
 class UserModel(BaseModel):

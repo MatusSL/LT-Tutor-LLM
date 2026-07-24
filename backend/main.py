@@ -1,11 +1,13 @@
 import logging
 import os
+from contextlib import asynccontextmanager
 
 from app.dependencies import verify_api_key
 from app.routes import chat, episode, health, review
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from src.app.services.vocabulary import pool
 
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
 logging.basicConfig(
@@ -23,6 +25,7 @@ _noise = [
     "faster_whisper",
     "language_tool_python",
     "urllib3",
+    "watchfiles",
 ]
 
 for _noisy in _noise:
@@ -31,7 +34,14 @@ for _noisy in _noise:
 logger = logging.getLogger(__name__)
 
 
-app = FastAPI()
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    pool.open()
+    yield
+    pool.close()
+
+
+app = FastAPI(lifespan=_lifespan)
 
 
 app.add_middleware(
@@ -56,7 +66,6 @@ app.include_router(health.router)
 app.include_router(chat.router, dependencies=_auth)
 app.include_router(review.router, dependencies=_auth)
 app.include_router(episode.router, dependencies=_auth)
-
 
 if __name__ == "__main__":
     import os

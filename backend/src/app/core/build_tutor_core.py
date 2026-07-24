@@ -1,22 +1,19 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-from pydantic import SecretStr
 
+from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 
 from app.agents.opener import Opener
 from app.agents.review_builder import ReviewBuilder
 from app.agents.tutor import Tutor
-
 from app.core.tutor_core import TutorCore
-
-from app.schemas.constants import CoreServices
 from app.schemas.api import Mode
-
-from app.services.vocabulary import Vocabulary
+from app.schemas.constants import CoreServices
 from app.services.language_detector import LanguageDetector
 from app.services.reviewer import Reviewer
+from app.services.vocabulary import Vocabulary
 
 load_dotenv()
 
@@ -25,7 +22,7 @@ API_KEY = SecretStr(raw_api_key) if raw_api_key else None
 
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:1234/v1")
 LLM_API_KEY = SecretStr(os.getenv("LLM_API_KEY", "lm-studio"))
-LLM_MODEL = os.getenv("LLM_MODEL", "google/gemma-3-12b")
+LLM_MODEL = os.getenv("LLM_MODEL", "google/gemma-4-e4b")
 
 MODELS = {
     "lt": {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
@@ -34,10 +31,7 @@ MODELS = {
 
 MODE: Mode = "conversation"
 
-# TUTOR_MODEL = ChatOpenAI(model=MODELS[MODE]["tutor"], api_key=API_KEY)
-REVIEWER_MODEL = ChatOpenAI(model=MODELS[MODE]["reviewer"], api_key=API_KEY)
-
-TUTOR_MODEL = ChatOpenAI(
+LLM = ChatOpenAI(
     base_url=LLM_BASE_URL,
     api_key=LLM_API_KEY,
     model=LLM_MODEL,
@@ -62,12 +56,12 @@ def resolve_episode_dir() -> Path:
 
 
 def build_tutor_core() -> TutorCore:
-    tutor = Tutor(model=TUTOR_MODEL)
-    opener = Opener(model=TUTOR_MODEL)
+    tutor = Tutor(model=LLM)
+    opener = Opener(model=LLM)
 
     reviewer = Reviewer()
     language_detector = LanguageDetector()
-    review_builder = ReviewBuilder(model=REVIEWER_MODEL)
+    review_builder = ReviewBuilder(model=LLM)
 
     vocabulary = Vocabulary()
     episode_dir = resolve_episode_dir()
