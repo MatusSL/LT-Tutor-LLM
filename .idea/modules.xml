@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/LT-Tutor-LLM.iml" filepath="$PROJECT_DIR$/.idea/LT-Tutor-LLM.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/backend.iml" filepath="$PROJECT_DIR$/.idea/backend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/lt-tutor-llm.iml" filepath="$PROJECT_DIR$/.idea/lt-tutor-llm.iml" />
     </modules>
   </component>
 </project>

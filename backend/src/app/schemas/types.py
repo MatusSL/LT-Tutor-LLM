@@ -42,4 +42,3 @@ class CorrectionFeedback:
     input_english: str | None
     input_language: Language
     correction: Correction | None
-

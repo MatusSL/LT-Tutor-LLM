@@ -10,6 +10,7 @@ from app.schemas.protocols import (
     VocabularyProtocol,
 )
 
+
 @dataclass
 class CoreServices:
     tutor: TutorProtocol

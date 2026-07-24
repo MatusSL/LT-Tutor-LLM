@@ -54,7 +54,7 @@ class Tutor(TutorProtocol):
             return MERGED_TUTOR_PROMPT.format(
                 history=conversation, user_input=user_input
             )
-        
+
         if user_ctx_data.scope is None:
             unlocked_tenses = "(none yet)"
             unlocked_structures = "(none yet)"

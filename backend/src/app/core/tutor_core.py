@@ -10,9 +10,15 @@ from app.schemas.api import ChatResponse, Mode
 from app.schemas.constants import CoreServices
 from app.schemas.db import Language, MistakeModel
 from app.schemas.llm import Correction, ErrorCandidate, OpenerResponse, TutorResponse
-from app.schemas.types import Context, CorrectionFeedback, UserContextData, UserInputAnalysis
+from app.schemas.types import (
+    Context,
+    CorrectionFeedback,
+    UserContextData,
+    UserInputAnalysis,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class TutorCore:
     def __init__(self, core_services: CoreServices):
@@ -76,7 +82,7 @@ class TutorCore:
                 Context(role="response", content=reply_message),
             ]
         )
-    
+
     def correct_user_sentence(self, sentence: str) -> Correction | None:
         err_candidates = self.reviewer.review_sentence(sentence)
 
@@ -104,32 +110,33 @@ class TutorCore:
         correction = self.correct_user_sentence(sentence)
 
         feedback = CorrectionFeedback(
-                input_spanish=sentence,
-                input_english=None,
-                input_language=self.session_state.language,
-                correction=correction
-            )
-        
+            input_spanish=sentence,
+            input_english=None,
+            input_language=self.session_state.language,
+            correction=correction,
+        )
+
         if correction and len(correction.error_candidates) > 0:
             self._executor.submit(self.update_error_words, correction)
 
         return feedback
-    
+
     def handle_english_input(self, sentence: str) -> CorrectionFeedback:
         return CorrectionFeedback(
             input_spanish=None,
             input_english=sentence,
             input_language=self.session_state.language,
-            correction=None
+            correction=None,
         )
-        
 
     def update_error_words(self, correction: Correction) -> None:
         mistake_models = self.get_mistake_models_for_correction(correction=correction)
         with self._vocab_lock:
             self.vocabulary.update_all_mistakes(mistakes=mistake_models)
 
-    def get_mistake_models_for_correction(self, correction: Correction) -> list[MistakeModel]:
+    def get_mistake_models_for_correction(
+        self, correction: Correction
+    ) -> list[MistakeModel]:
         mistake_models: list[MistakeModel] = []
 
         for mistake in correction.error_candidates:
@@ -138,9 +145,7 @@ class TutorCore:
                     word=mistake.word, sentence=correction.original
                 )
             except RuntimeError as e:
-                logger.warning("Skipping mistake %s",
-                               mistake.word,
-                               exc_info=e)
+                logger.warning("Skipping mistake %s", mistake.word, exc_info=e)
                 continue
 
             mistake_model = MistakeModel(

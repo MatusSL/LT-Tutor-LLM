@@ -3,10 +3,11 @@ from language_tool_python import LanguageTool, Match
 from app.schemas.llm import ErrorCandidate
 from app.schemas.protocols import ReviewerProtocol
 
+
 class Reviewer(ReviewerProtocol):
     def __init__(self) -> None:
         self.tool = LanguageTool("es")
-    
+
     def review_sentence(self, sentence: str) -> list[ErrorCandidate] | None:
         matches: list[Match] = self.tool.check(sentence)
 
@@ -19,12 +20,12 @@ class Reviewer(ReviewerProtocol):
 
             candidates.append(
                 ErrorCandidate(
-                    word=sentence[start: end],
+                    word=sentence[start:end],
                     translation="",
                     span=[start, end],
                     error_type=error_type,
                     correction=" ".join(correction),
-                    explanation=""
+                    explanation="",
                 )
             )
 

@@ -1,14 +1,11 @@
-from fastapi import Depends, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Request
-from fastapi.responses import JSONResponse
+import logging
+import os
 
 from app.dependencies import verify_api_key
-
-import os
-import logging
-
 from app.routes import chat, episode, health, review
+from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 log_level = os.getenv("LOG_LEVEL", "DEBUG").upper()
 logging.basicConfig(
@@ -16,8 +13,17 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s - %(message)s",
 )
 
-_noise = ["httpcore", "httpx", "hpack", "openai", "python_multipart",
-          "asyncio", "faster_whisper", "language_tool_python", "urllib3"]
+_noise = [
+    "httpcore",
+    "httpx",
+    "hpack",
+    "openai",
+    "python_multipart",
+    "asyncio",
+    "faster_whisper",
+    "language_tool_python",
+    "urllib3",
+]
 
 for _noisy in _noise:
     logging.getLogger(_noisy).setLevel(logging.WARNING)
@@ -54,7 +60,9 @@ app.include_router(episode.router, dependencies=_auth)
 
 if __name__ == "__main__":
     import os
+
     import uvicorn
+
     host = os.getenv("APP_HOST", "0.0.0.0")
     port = int(os.getenv("APP_PORT", "8000"))
     uvicorn.run(app=app, host=host, port=port)

@@ -38,6 +38,7 @@ class TutorResponse(BaseModel):
         description="One short note on how a native would phrase the sentence more naturally. Null if the sentence is already natural.",
     )
 
+
 class HighFrequencyWords(BaseModel):
     high_frequency_words: list[str]
 

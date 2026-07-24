@@ -28,11 +28,11 @@ LLM_API_KEY = SecretStr(os.getenv("LLM_API_KEY", "lm-studio"))
 LLM_MODEL = os.getenv("LLM_MODEL", "google/gemma-3-12b")
 
 MODELS = {
-    "lt":           {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
+    "lt": {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
     "conversation": {"tutor": "gpt-5.4-mini", "reviewer": "gpt-5.4-nano"},
 }
 
-MODE: Mode = 'conversation'
+MODE: Mode = "conversation"
 
 # TUTOR_MODEL = ChatOpenAI(model=MODELS[MODE]["tutor"], api_key=API_KEY)
 REVIEWER_MODEL = ChatOpenAI(model=MODELS[MODE]["reviewer"], api_key=API_KEY)
@@ -52,7 +52,6 @@ TUTOR_MODEL = ChatOpenAI(
 # )
 
 
-
 def resolve_episode_dir() -> Path:
     current = Path(__file__).resolve()
     while not (current / "LT_Episodes").exists():
@@ -65,7 +64,7 @@ def resolve_episode_dir() -> Path:
 def build_tutor_core() -> TutorCore:
     tutor = Tutor(model=TUTOR_MODEL)
     opener = Opener(model=TUTOR_MODEL)
-    
+
     reviewer = Reviewer()
     language_detector = LanguageDetector()
     review_builder = ReviewBuilder(model=REVIEWER_MODEL)
@@ -80,7 +79,7 @@ def build_tutor_core() -> TutorCore:
         episodes_dir=episode_dir,
         opener=opener,
         language_detector=language_detector,
-        reviewer=reviewer
+        reviewer=reviewer,
     )
 
     return TutorCore(core_services=core_services)

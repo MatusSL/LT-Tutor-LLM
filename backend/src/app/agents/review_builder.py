@@ -68,9 +68,7 @@ class ReviewBuilder(ReviewBuilderProtocol):
             return self.model.invoke(prompt)  # type: ignore
         except Exception as e:
             logger.error(
-                "Failed to generate distractions for word '%s'",
-                word,
-                exc_info=e
+                "Failed to generate distractions for word '%s'", word, exc_info=e
             )
             raise RuntimeError(
                 f"Failed to generate distractions for word '{word}'"
@@ -89,7 +87,6 @@ class ReviewBuilder(ReviewBuilderProtocol):
             blank_words=fill_in_the_blank,
         )
 
-
     @staticmethod
     def generate_flashcards(mistakes: list[MistakeModel]) -> list[Flashcard]:
         return [Flashcard(origin=m.origin, translation=m.translation) for m in mistakes]
@@ -103,5 +100,7 @@ class ReviewBuilder(ReviewBuilderProtocol):
         return [m.distractions.fill_blank for m in mistakes]
 
     @staticmethod
-    def generate_error_correction(mistakes: list[MistakeModel]) -> list[ErrorCorrection]:
+    def generate_error_correction(
+        mistakes: list[MistakeModel],
+    ) -> list[ErrorCorrection]:
         return [m.distractions.correction for m in mistakes]
